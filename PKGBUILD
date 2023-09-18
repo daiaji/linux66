@@ -34,7 +34,7 @@ else
 fi
 
 sha256sums=('8b4bc9efa7cf55fc4b2ae87c44aa0a83fa44a9a58fb0b4f620a7946998b76cd7'
-            'a02fbdc82927a37f30ced36bcb2d7ccf491a5b79488ddb45b3bdab13a65ec990'
+            'a678e33eac08d8fa857aaee7015a14e4ee9bf17142b40150efbd0a99a92b8d7c'
             '05f04019d4a2ee072238c32860fa80d673687d84d78ef436ae9332b6fb788467')
 
 prepare() {
