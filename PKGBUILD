@@ -5,12 +5,12 @@
 # Thomas Baechler <thomas@archlinux.org>
 
 _basekernel=6.6
-_rc=rc3
+_rc=rc4
 _basever=${_basekernel//.}
 _kernelname=-MANJARO
 pkgbase=linux${_basever}
 pkgname=("$pkgbase" "$pkgbase-headers")
-pkgver=6.6.0rc3
+pkgver=6.6.0rc4
 pkgrel=1
 arch=('x86_64')
 url="https://www.kernel.org/"
@@ -33,7 +33,7 @@ else
   _srcdir="linux-${_basekernel}-${_rc}"
 fi
 
-sha256sums=('0044724ea1991ff1592f5959ea113aa6a9fcd3ac415d5c48e65e592dae864f91'
+sha256sums=('f5bfa3cb0d889f136b92b88e31013e34a31fb66d7733d38ea119bdb6e8129f59'
             '75b1b64057d25553cd4c325390f6c1946dc1b7cd58ecc8588cb2c4cfc2b3a8d4'
             '05f04019d4a2ee072238c32860fa80d673687d84d78ef436ae9332b6fb788467')
 
