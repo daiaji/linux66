@@ -17,13 +17,31 @@ url="https://www.kernel.org/"
 license=('GPL2')
 makedepends=(bc docbook-xsl libelf pahole python-sphinx git inetutils kmod xmlto cpio perl tar xz)
 options=('!strip')
-source=("https://git.kernel.org/torvalds/t/linux-${_basekernel}-${_rc}.tar.gz"
-        #"https://www.kernel.org/pub/linux/kernel/v6.x/patch-${pkgver}.xz"
-        'config'
+source=(https://git.kernel.org/torvalds/t/linux-${_basekernel}-${_rc}.tar.gz
+        #https://www.kernel.org/pub/linux/kernel/v6.x/patch-${pkgver}.xz
+        config
         # Upstream Patches
         # ARCH Patches
-        '0101-ZEN_Add_sysctl_and_CONFIG_to_disallow_unprivileged_CLONE_NEWUSER.patch'
+        0101-ZEN_Add_sysctl_and_CONFIG_to_disallow_unprivileged_CLONE_NEWUSER.patch
+        0102-drivers-firmware-skip-simpledrm-if-nvidia-drm.modese.patch
         # MANJARO Patches
+        0201-asus-ally-asus-hid.patch
+        0202-mt7921e_Perform_FLR_to_recovery_the_device.patch
+        # AMD GPU reset patches
+        1261d730c9639a14b2ee262874247d30a873dd99.patch
+        6cdd4582ad64814b7685c42ed64addaa99c3726c.patch
+        0d9213e1b807a79970aa93434b2371f55691b6c4.patch
+        # No overrides ROG ally <= 223 BIOS
+        0001-ALSA-hda-cs35l41-Support-ASUS-2023-laptops-with-miss.patch
+        # Realtek patch
+        0999-patch_realtek.patch
+        # HID patches
+        0001-HID.patch
+        # Additional ALLY patches
+        ROG-ALLY-LED-fix.patch
+        ROG-ALLY-NCT6775-PLATFORM.patch
+        ROG_ALLY_OLDER_BIOS_AUDIO.patch
+        0001-ROG-ALLY-bmi323-device.patch
 )
 
 if [[ -z "$_rc" ]]; then
@@ -35,7 +53,20 @@ fi
 
 sha256sums=('4fa3ebe1d789b6286e20cd5368c65094786b2a33722878645d04952382aded42'
             'f91a2bc0c9d7c5ecc80ff158d6c2b154c6c23891e536e9cf35beb56ecbd5b281'
-            '05f04019d4a2ee072238c32860fa80d673687d84d78ef436ae9332b6fb788467')
+            '05f04019d4a2ee072238c32860fa80d673687d84d78ef436ae9332b6fb788467'
+            'e1d17690dd21e8d5482b63ca66bfe6b478d39e8e8b59eedd53adb0a55ebc308d'
+            '6541760a7b0513ce52c7b2d67810135b1bd172849f52765e74a5ec0c7584dd56'
+            'd673d034fbcd80426fd8d9c6af56537c5fe5b55fe49d74e313474d7fc285ecc1'
+            '1f62542a889a6c2eafd43acd0699f54720ed891eeda66a4a9261d75b92f28b7f'
+            '6bc2c1b9a485c852b45e4064e8b9b559b9b26113fdc80bf9653af44c0886fde2'
+            '559f01074cda3c161996617f1b7bc6cbbce0efc50e2cf9e843d60922ff2e8063'
+            '93a06177b4308cd73cff0525d55ebf9f0033964b4ee754076d9948b7119b8952'
+            '3aa9f1ca47bb078f3c9a52fe61897cf4fe989068cd7e66bfa6644fd605fa40d2'
+            '7c948773d758418d8a436067265d678c444827562c46b9fced2ff31ced108481'
+            '68a9b80e0b8d75880fbf3d8486bfe522cb19b4042554786b23bead9320165fa5'
+            'cfcd5c177423df8b7b98b0500fe7ab0757f895ed945c33e205963f0069c7a3be'
+            '2d8246d2ff6312cd8ff832c50f4176201e43fe9d55e9b758bec9f0cad75bd0ba'
+            '5574a68b1c7733769835bb856a8c32e54398dfde59f264708672b87b73b3c6ea')
 
 prepare() {
   cd "$_srcdir"
