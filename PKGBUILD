@@ -42,6 +42,7 @@ source=(https://git.kernel.org/torvalds/t/linux-${_basekernel}-${_rc}.tar.gz
         ROG-ALLY-NCT6775-PLATFORM.patch
         ROG_ALLY_OLDER_BIOS_AUDIO.patch
         0001-ROG-ALLY-bmi323-device.patch
+        rog-ally-audio-fix.patch
         gamemode_toggle.patch
 )
 
@@ -68,6 +69,7 @@ sha256sums=('c86e8fcc8aeb757ed08158e09f14b734c2ee77b99aa0123e46edbdde34f1aaad'
             'cfcd5c177423df8b7b98b0500fe7ab0757f895ed945c33e205963f0069c7a3be'
             '2d8246d2ff6312cd8ff832c50f4176201e43fe9d55e9b758bec9f0cad75bd0ba'
             '5574a68b1c7733769835bb856a8c32e54398dfde59f264708672b87b73b3c6ea'
+            'd223846daedc5d223458da1f03d5ada7d402261c21165dd66a7c5e13e2886e39'
             'afdfc94692ba8a339eef00128f378a989902a6a562ec26cdabbc8e5271f5f4c9')
 
 prepare() {
