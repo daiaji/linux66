@@ -5,12 +5,12 @@
 # Thomas Baechler <thomas@archlinux.org>
 
 _basekernel=6.6
-_rc=rc6
+_rc=rc7
 _basever=${_basekernel//.}
 _kernelname=-MANJARO
 pkgbase=linux${_basever}
 pkgname=("$pkgbase" "$pkgbase-headers")
-pkgver=6.6.0rc6
+pkgver=6.6.0rc7
 pkgrel=1
 arch=('x86_64')
 url="https://www.kernel.org/"
@@ -42,6 +42,7 @@ source=(https://git.kernel.org/torvalds/t/linux-${_basekernel}-${_rc}.tar.gz
         ROG-ALLY-NCT6775-PLATFORM.patch
         ROG_ALLY_OLDER_BIOS_AUDIO.patch
         0001-ROG-ALLY-bmi323-device.patch
+        gamemode_toggle.patch
 )
 
 if [[ -z "$_rc" ]]; then
@@ -51,7 +52,7 @@ else
   _srcdir="linux-${_basekernel}-${_rc}"
 fi
 
-sha256sums=('4fa3ebe1d789b6286e20cd5368c65094786b2a33722878645d04952382aded42'
+sha256sums=('c86e8fcc8aeb757ed08158e09f14b734c2ee77b99aa0123e46edbdde34f1aaad'
             'f91a2bc0c9d7c5ecc80ff158d6c2b154c6c23891e536e9cf35beb56ecbd5b281'
             '05f04019d4a2ee072238c32860fa80d673687d84d78ef436ae9332b6fb788467'
             'e1d17690dd21e8d5482b63ca66bfe6b478d39e8e8b59eedd53adb0a55ebc308d'
@@ -66,7 +67,8 @@ sha256sums=('4fa3ebe1d789b6286e20cd5368c65094786b2a33722878645d04952382aded42'
             '68a9b80e0b8d75880fbf3d8486bfe522cb19b4042554786b23bead9320165fa5'
             'cfcd5c177423df8b7b98b0500fe7ab0757f895ed945c33e205963f0069c7a3be'
             '2d8246d2ff6312cd8ff832c50f4176201e43fe9d55e9b758bec9f0cad75bd0ba'
-            '5574a68b1c7733769835bb856a8c32e54398dfde59f264708672b87b73b3c6ea')
+            '5574a68b1c7733769835bb856a8c32e54398dfde59f264708672b87b73b3c6ea'
+            'afdfc94692ba8a339eef00128f378a989902a6a562ec26cdabbc8e5271f5f4c9')
 
 prepare() {
   cd "$_srcdir"
