@@ -11,7 +11,7 @@ _kernelname=-MANJARO
 pkgbase=linux${_basever}
 pkgname=("$pkgbase" "$pkgbase-headers")
 pkgver=6.6.0rc7
-pkgrel=3
+pkgrel=4
 arch=('x86_64')
 url="https://www.kernel.org/"
 license=('GPL2')
@@ -27,6 +27,7 @@ source=(https://git.kernel.org/torvalds/t/linux-${_basekernel}-${_rc}.tar.gz
         # MANJARO Patches
         0201-asus-ally-asus-hid.patch
         0202-mt7921e_Perform_FLR_to_recovery_the_device.patch
+        libata-spindown-regression.patch
         # AMD GPU reset patches
         1261d730c9639a14b2ee262874247d30a873dd99.patch
         6cdd4582ad64814b7685c42ed64addaa99c3726c.patch
