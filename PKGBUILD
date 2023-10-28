@@ -19,6 +19,7 @@ makedepends=(bc docbook-xsl libelf pahole python-sphinx git inetutils kmod xmlto
 options=('!strip')
 source=(https://git.kernel.org/torvalds/t/linux-${_basekernel}-${_rc}.tar.gz
         #https://www.kernel.org/pub/linux/kernel/v6.x/patch-${pkgver}.xz
+        https://github.com/torvalds/linux/compare/v6.6-rc7...56567a20.patch
         config
         # Upstream Patches
         # ARCH Patches
@@ -55,6 +56,7 @@ else
 fi
 
 sha256sums=('c86e8fcc8aeb757ed08158e09f14b734c2ee77b99aa0123e46edbdde34f1aaad'
+            '8d6240b0804ae0fd31fe4e82ae5dceeaeeaeaf7f66692bfb41feb723ebefdfde'
             'f91a2bc0c9d7c5ecc80ff158d6c2b154c6c23891e536e9cf35beb56ecbd5b281'
             '05f04019d4a2ee072238c32860fa80d673687d84d78ef436ae9332b6fb788467'
             'e1d17690dd21e8d5482b63ca66bfe6b478d39e8e8b59eedd53adb0a55ebc308d'
