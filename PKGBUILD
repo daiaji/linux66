@@ -28,7 +28,6 @@ source=(https://git.kernel.org/torvalds/t/linux-${_basekernel}-${_rc}.tar.gz
         # MANJARO Patches
         0201-asus-ally-asus-hid.patch
         0202-mt7921e_Perform_FLR_to_recovery_the_device.patch
-        libata-spindown-regression.patch
         # AMD GPU reset patches
         1261d730c9639a14b2ee262874247d30a873dd99.patch
         6cdd4582ad64814b7685c42ed64addaa99c3726c.patch
@@ -62,7 +61,6 @@ sha256sums=('c86e8fcc8aeb757ed08158e09f14b734c2ee77b99aa0123e46edbdde34f1aaad'
             'e1d17690dd21e8d5482b63ca66bfe6b478d39e8e8b59eedd53adb0a55ebc308d'
             '6541760a7b0513ce52c7b2d67810135b1bd172849f52765e74a5ec0c7584dd56'
             'd673d034fbcd80426fd8d9c6af56537c5fe5b55fe49d74e313474d7fc285ecc1'
-            'a737e459bba26bfc46eec4901526066ff62d86efd7f7882eef4978e54ab68ed2'
             '1f62542a889a6c2eafd43acd0699f54720ed891eeda66a4a9261d75b92f28b7f'
             '6bc2c1b9a485c852b45e4064e8b9b559b9b26113fdc80bf9653af44c0886fde2'
             '559f01074cda3c161996617f1b7bc6cbbce0efc50e2cf9e843d60922ff2e8063'
