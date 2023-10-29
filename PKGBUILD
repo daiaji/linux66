@@ -27,9 +27,9 @@ source=(https://git.kernel.org/torvalds/t/linux-${_basekernel}.tar.gz
         0201-asus-ally-asus-hid.patch
         0202-mt7921e_Perform_FLR_to_recovery_the_device.patch
         # AMD GPU reset patches
-        1261d730c9639a14b2ee262874247d30a873dd99.patch
-        6cdd4582ad64814b7685c42ed64addaa99c3726c.patch
-        0d9213e1b807a79970aa93434b2371f55691b6c4.patch
+        0301-drm-Add_GPU_reset_sysfs_event.patch
+        0302-drm-amdgpu-add_work_function_for_GPU_reset_event.patch
+        0303-drm-amdgpu-schedule_GPU_reset_event_work_function.patch
         # No overrides ROG ally <= 223 BIOS
         0001-ALSA-hda-cs35l41-Support-ASUS-2023-laptops-with-miss.patch
         # Realtek patch
