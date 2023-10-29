@@ -5,21 +5,19 @@
 # Thomas Baechler <thomas@archlinux.org>
 
 _basekernel=6.6
-_rc=rc7
 _basever=${_basekernel//.}
 _kernelname=-MANJARO
 pkgbase=linux${_basever}
 pkgname=("$pkgbase" "$pkgbase-headers")
-pkgver=6.6.0rc7
-pkgrel=5
+pkgver=6.6.0
+pkgrel=1
 arch=('x86_64')
 url="https://www.kernel.org/"
 license=('GPL2')
 makedepends=(bc docbook-xsl libelf pahole python-sphinx git inetutils kmod xmlto cpio perl tar xz)
 options=('!strip')
-source=(https://git.kernel.org/torvalds/t/linux-${_basekernel}-${_rc}.tar.gz
-        #https://www.kernel.org/pub/linux/kernel/v6.x/patch-${pkgver}.xz
-        https://github.com/torvalds/linux/compare/v6.6-rc7...56567a20.patch
+source=(https://git.kernel.org/torvalds/t/linux-${_basekernel}.tar.gz
+        #"https://www.kernel.org/pub/linux/kernel/v6.x/patch-${pkgver}.xz"
         config
         # Upstream Patches
         # ARCH Patches
