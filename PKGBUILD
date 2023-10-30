@@ -46,15 +46,13 @@ source=(https://git.kernel.org/torvalds/t/linux-${_basekernel}.tar.gz
 )
 
 if [[ -z "$_rc" ]]; then
-  source+=("https://www.kernel.org/pub/linux/kernel/v6.x/patch-${pkgver}.xz")
   _srcdir="linux-${_basekernel}"
 else
   _srcdir="linux-${_basekernel}-${_rc}"
 fi
 
-sha256sums=('c86e8fcc8aeb757ed08158e09f14b734c2ee77b99aa0123e46edbdde34f1aaad'
-            '8d6240b0804ae0fd31fe4e82ae5dceeaeeaeaf7f66692bfb41feb723ebefdfde'
-            'f91a2bc0c9d7c5ecc80ff158d6c2b154c6c23891e536e9cf35beb56ecbd5b281'
+sha256sums=('9a72c005a62f109f96ee00552502d16c4f06c248e6baba1629506627396ac0a7'
+            'b6d374dd2c0099d6ccb183e6320f5a4b5ab3068dfdc9344d10052c562822473b'
             '05f04019d4a2ee072238c32860fa80d673687d84d78ef436ae9332b6fb788467'
             'e1d17690dd21e8d5482b63ca66bfe6b478d39e8e8b59eedd53adb0a55ebc308d'
             '6541760a7b0513ce52c7b2d67810135b1bd172849f52765e74a5ec0c7584dd56'
@@ -76,10 +74,8 @@ prepare() {
   cd "$_srcdir"
 
   # add upstream patch
-  if [[ -z "$_rc" ]]; then
-    msg "add upstream patch"
-    patch -p1 -i "../patch-${pkgver}"
-  fi
+#  msg "add upstream patch"
+#  patch -p1 -i "../patch-${pkgver}"
 
   local src
   for src in "${source[@]}"; do
