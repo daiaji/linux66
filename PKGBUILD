@@ -10,7 +10,7 @@ _kernelname=-MANJARO
 pkgbase=linux${_basever}
 pkgname=("$pkgbase" "$pkgbase-headers")
 pkgver=6.6.0
-pkgrel=2
+pkgrel=3
 arch=('x86_64')
 url="https://www.kernel.org/"
 license=('GPL2')
@@ -26,23 +26,23 @@ source=(https://git.kernel.org/torvalds/t/linux-${_basekernel}.tar.gz
         # MANJARO Patches
         0201-asus-ally-asus-hid.patch
         0202-mt7921e_Perform_FLR_to_recovery_the_device.patch
+        # Realtek patch
+        0999-patch_realtek.patch
         # AMD GPU reset patches
         0301-drm-Add_GPU_reset_sysfs_event.patch
         0302-drm-amdgpu-add_work_function_for_GPU_reset_event.patch
         0303-drm-amdgpu-schedule_GPU_reset_event_work_function.patch
-        # No overrides ROG ally <= 223 BIOS
+        # No overrides ROG ally <= 323 BIOS
         0001-ALSA-hda-cs35l41-Support-ASUS-2023-laptops-with-miss.patch
-        # Realtek patch
-        0999-patch_realtek.patch
-        # HID patches
-        0001-HID.patch
+        0001-ALSA-hda-cs35l41-Improve-support-for-ASUS-ROG-Ally.patch
         # Additional ALLY patches
         ROG-ALLY-LED-fix.patch
         ROG-ALLY-NCT6775-PLATFORM.patch
-        ROG_ALLY_OLDER_BIOS_AUDIO.patch
         0001-ROG-ALLY-bmi323-device.patch
-        rog-ally-audio-fix.patch
-        gamemode_toggle.patch
+        0002-usb-Add-a-mode-switch-for-the-controller-embedded-on.patch
+        0004-hid-asus-Improve-function-signature.patch
+        # Steamdeck HID patches
+        0001-HID.patch
 )
 
 if [[ -z "$_rc" ]]; then
@@ -57,18 +57,18 @@ sha256sums=('9a72c005a62f109f96ee00552502d16c4f06c248e6baba1629506627396ac0a7'
             'e1d17690dd21e8d5482b63ca66bfe6b478d39e8e8b59eedd53adb0a55ebc308d'
             '6541760a7b0513ce52c7b2d67810135b1bd172849f52765e74a5ec0c7584dd56'
             'd673d034fbcd80426fd8d9c6af56537c5fe5b55fe49d74e313474d7fc285ecc1'
+            '3aa9f1ca47bb078f3c9a52fe61897cf4fe989068cd7e66bfa6644fd605fa40d2'
             '1f62542a889a6c2eafd43acd0699f54720ed891eeda66a4a9261d75b92f28b7f'
             '6bc2c1b9a485c852b45e4064e8b9b559b9b26113fdc80bf9653af44c0886fde2'
             '559f01074cda3c161996617f1b7bc6cbbce0efc50e2cf9e843d60922ff2e8063'
             '79970a4729572cb25fd4644d66f38ecd5b3e1610a42ea4bbe436b501f3469fa2'
-            '3aa9f1ca47bb078f3c9a52fe61897cf4fe989068cd7e66bfa6644fd605fa40d2'
-            '7c948773d758418d8a436067265d678c444827562c46b9fced2ff31ced108481'
+            '430a7f971d78d0873708e0ad38fba602ceafefd4da8ebbf9d9c591bc4799acb5'
             '68a9b80e0b8d75880fbf3d8486bfe522cb19b4042554786b23bead9320165fa5'
             'cfcd5c177423df8b7b98b0500fe7ab0757f895ed945c33e205963f0069c7a3be'
-            '2d8246d2ff6312cd8ff832c50f4176201e43fe9d55e9b758bec9f0cad75bd0ba'
             '5574a68b1c7733769835bb856a8c32e54398dfde59f264708672b87b73b3c6ea'
-            '430a7f971d78d0873708e0ad38fba602ceafefd4da8ebbf9d9c591bc4799acb5'
-            'd7f6edef50a27cb6f060b6fe49b14a80ce4e7748dd59ffa1dd637cd3c0947dc7')
+            '55b1c6d6f0a76ab9b520473aa51881e4477150d176273dcd7dd238c553056d95'
+            '0583bf724b0d12202506c843784a4b1acfb1305dd2d9c1914a4fd8642484e80e'
+            '7c948773d758418d8a436067265d678c444827562c46b9fced2ff31ced108481')
 
 prepare() {
   cd "$_srcdir"
