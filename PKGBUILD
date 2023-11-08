@@ -9,15 +9,15 @@ _basever=${_basekernel//.}
 _kernelname=-MANJARO
 pkgbase=linux${_basever}
 pkgname=("$pkgbase" "$pkgbase-headers")
-pkgver=6.6.0
-pkgrel=3
+pkgver=6.6.1
+pkgrel=1
 arch=('x86_64')
 url="https://www.kernel.org/"
 license=('GPL2')
 makedepends=(bc docbook-xsl libelf pahole python-sphinx git inetutils kmod xmlto cpio perl tar xz)
 options=('!strip')
 source=(https://git.kernel.org/torvalds/t/linux-${_basekernel}.tar.gz
-        #"https://www.kernel.org/pub/linux/kernel/v6.x/patch-${pkgver}.xz"
+        "https://www.kernel.org/pub/linux/kernel/v6.x/patch-${pkgver}.xz"
         config
         # Upstream Patches
         # ARCH Patches
@@ -52,6 +52,7 @@ else
 fi
 
 sha256sums=('9a72c005a62f109f96ee00552502d16c4f06c248e6baba1629506627396ac0a7'
+            '39654b8d91e5c36544bc987a8ab353f53cdea738179155cd6eb7c992ba7f8c04'
             'c5449388f4abb9492a635962d4d6b477c7daa0c180dd17f896ce6fb3cb8324a6'
             '05f04019d4a2ee072238c32860fa80d673687d84d78ef436ae9332b6fb788467'
             'e1d17690dd21e8d5482b63ca66bfe6b478d39e8e8b59eedd53adb0a55ebc308d'
@@ -74,8 +75,8 @@ prepare() {
   cd "$_srcdir"
 
   # add upstream patch
-#  msg "add upstream patch"
-#  patch -p1 -i "../patch-${pkgver}"
+  msg "add upstream patch"
+  patch -p1 -i "../patch-${pkgver}"
 
   local src
   for src in "${source[@]}"; do
