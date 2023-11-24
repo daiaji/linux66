@@ -30,9 +30,9 @@ index 6a79f16233ab..c28829d45fb5 100644
  #include <linux/dmi.h>
  #include <linux/fb.h>
  #include <linux/hwmon.h>
-@@ -132,6 +133,9 @@ module_param(fnlock_default, bool, 0444);
- #define ASUS_SCREENPAD_BRIGHT_MAX 255
- #define ASUS_SCREENPAD_BRIGHT_DEFAULT 60
+@@ -127,6 +128,9 @@ module_param(fnlock_default, bool, 0444)
+ #define NVIDIA_TEMP_MIN		75
+ #define NVIDIA_TEMP_MAX		87
  
 +/* Controls the power state of the USB0 hub on ROG Ally which input is on */
 +#define ASUS_USB0_PWR_SB_PCI0_SBRG_EC0_CSEE "\\_SB.PCI0.SBRG.EC0.CSEE"
@@ -40,7 +40,7 @@ index 6a79f16233ab..c28829d45fb5 100644
  static const char * const ashs_ids[] = { "ATK4001", "ATK4002", NULL };
  
  static int throttle_thermal_policy_write(struct asus_wmi *);
-@@ -300,6 +304,9 @@ struct asus_wmi {
+@@ -294,6 +298,9 @@ struct asus_wmi {
  
  	bool fnlock_locked;
  
@@ -50,7 +50,7 @@ index 6a79f16233ab..c28829d45fb5 100644
  	struct asus_wmi_debug debug;
  
  	struct asus_wmi_driver *driver;
-@@ -4488,6 +4495,8 @@ static int asus_wmi_add(struct platform_device *pdev)
+@@ -4364,6 +4371,8 @@ static int asus_wmi_add(struct platform_
  	asus->nv_temp_tgt_available = asus_wmi_dev_is_present(asus, ASUS_WMI_DEVID_NV_THERM_TARGET);
  	asus->panel_overdrive_available = asus_wmi_dev_is_present(asus, ASUS_WMI_DEVID_PANEL_OD);
  	asus->mini_led_mode_available = asus_wmi_dev_is_present(asus, ASUS_WMI_DEVID_MINI_LED_MODE);
@@ -59,7 +59,7 @@ index 6a79f16233ab..c28829d45fb5 100644
  
  	err = fan_boost_mode_check_present(asus);
  	if (err)
-@@ -4654,6 +4663,38 @@ static int asus_hotk_resume(struct device *device)
+@@ -4521,6 +4530,38 @@ static int asus_hotk_resume(struct devic
  		asus_wmi_fnlock_update(asus);
  
  	asus_wmi_tablet_mode_get_state(asus);
@@ -98,7 +98,7 @@ index 6a79f16233ab..c28829d45fb5 100644
  	return 0;
  }
  
-@@ -4701,6 +4742,8 @@ static const struct dev_pm_ops asus_pm_ops = {
+@@ -4568,6 +4609,8 @@ static const struct dev_pm_ops asus_pm_o
  	.thaw = asus_hotk_thaw,
  	.restore = asus_hotk_restore,
  	.resume = asus_hotk_resume,
