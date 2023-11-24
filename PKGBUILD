@@ -10,7 +10,7 @@ _kernelname=-MANJARO
 pkgbase=linux${_basever}
 pkgname=("$pkgbase" "$pkgbase-headers")
 pkgver=6.6.2
-pkgrel=1
+pkgrel=2
 arch=('x86_64')
 url="https://www.kernel.org/"
 license=('GPL2')
@@ -41,6 +41,7 @@ source=(https://git.kernel.org/torvalds/t/linux-${_basekernel}.tar.gz
         0001-ROG-ALLY-bmi323-device.patch
         0002-usb-Add-a-mode-switch-for-the-controller-embedded-on.patch
         0004-hid-asus-Improve-function-signature.patch
+        0001-platform-x86-asus-wmi-disable-USB0-hub-on-ROG-Ally-b.patch
         # Steamdeck HID patches
         0001-HID.patch
 )
