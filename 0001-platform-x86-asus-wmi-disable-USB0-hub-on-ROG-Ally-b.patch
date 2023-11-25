@@ -92,7 +92,7 @@ index 6a79f16233ab..c28829d45fb5 100644
 +		msleep(1000); /* sleep required to ensure n-key is disabled before sleep continues */
 +		status = acpi_execute_simple_method(NULL, ASUS_USB0_PWR_SB_PCI0_SBRG_EC0_CSEE, 0xB7);
 +		msleep(1000); /* sleep required to ensure n-key is disabled before sleep continues */
-+		if (ACPI_FAILURE(status)) {öüä
++		if (ACPI_FAILURE(status)) {
 +			pr_warn("failed to set USB hub power off\n");
 +			// return 1;
 +		}
