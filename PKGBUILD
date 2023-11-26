@@ -10,7 +10,7 @@ _kernelname=-MANJARO
 pkgbase=linux${_basever}
 pkgname=("$pkgbase" "$pkgbase-headers")
 pkgver=6.6.2
-pkgrel=4
+pkgrel=5
 arch=('x86_64')
 url="https://www.kernel.org/"
 license=('GPL2')
@@ -70,7 +70,7 @@ sha256sums=('9a72c005a62f109f96ee00552502d16c4f06c248e6baba1629506627396ac0a7'
             '5574a68b1c7733769835bb856a8c32e54398dfde59f264708672b87b73b3c6ea'
             '55b1c6d6f0a76ab9b520473aa51881e4477150d176273dcd7dd238c553056d95'
             '0583bf724b0d12202506c843784a4b1acfb1305dd2d9c1914a4fd8642484e80e'
-            'ecc21f9ef1263fe438fded5a003e05cf60a94d349934b1d7b550f1deff5b729c'
+            'ebf78f6fe2f179cda673d8732b12e8b96a829a00093bec04a8cf389551aca5e5'
             '7c948773d758418d8a436067265d678c444827562c46b9fced2ff31ced108481')
 
 prepare() {
