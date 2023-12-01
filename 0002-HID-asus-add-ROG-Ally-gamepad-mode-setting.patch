@@ -1,17 +1,17 @@
-From 0615c61e3476b018bb3e2c23e6ba256f9f599b65 Mon Sep 17 00:00:00 2001
+From 0c9d0a667f612b08c87a145d6cacc08bc5c1214d Mon Sep 17 00:00:00 2001
 From: "Luke D. Jones" <luke@ljones.dev>
 Date: Fri, 1 Dec 2023 16:57:19 +1300
-Subject: [PATCH 2/2] HID: asus: add ROG Ally gamepad mode setting
+Subject: [PATCH v2 2/2] HID: asus: add ROG Ally gamepad mode setting
 
 ---
  drivers/hid/hid-asus-rog.h |  83 ++++++++++++++++++++++++++
- drivers/hid/hid-asus.c     | 115 ++++++++++++++++++++++++++++++++++++-
- 2 files changed, 197 insertions(+), 1 deletion(-)
+ drivers/hid/hid-asus.c     | 116 ++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 198 insertions(+), 1 deletion(-)
  create mode 100644 drivers/hid/hid-asus-rog.h
 
 diff --git a/drivers/hid/hid-asus-rog.h b/drivers/hid/hid-asus-rog.h
 new file mode 100644
-index 000000000000..1fbc3d9966e5
+index 000000000000..2c80c0448420
 --- /dev/null
 +++ b/drivers/hid/hid-asus-rog.h
 @@ -0,0 +1,83 @@
@@ -22,8 +22,8 @@ index 000000000000..1fbc3d9966e5
 +	ally_gamepad_cmd_set_js_dz			= 0x04, /* deadzones */
 +	ally_gamepad_cmd_set_tr_dz			= 0x05, /* deadzones */
 +	ally_gamepad_cmd_set_vibe_intensity = 0x06,
-+	ally_gamepad_cmd_check_ready		= 0x06,
-+	ally_gamepad_cmd_xpad_status		= 0x0c,
++	ally_gamepad_cmd_check_ready		= 0x0A,
++	ally_gamepad_cmd_xpad_status		= 0x0C,
 +	ally_gamepad_cmd_check_for_js_curve = 0x12,
 +	ally_gamepad_cmd_set_js_curve		= 0x13,
 +	ally_gamepad_cmd_set_xbox_output	= 0x15,
@@ -100,7 +100,7 @@ index 000000000000..1fbc3d9966e5
 +};
 \ No newline at end of file
 diff --git a/drivers/hid/hid-asus.c b/drivers/hid/hid-asus.c
-index a1c72184e464..c1cc350b7ab8 100644
+index a1c72184e464..436e1c23d5ad 100644
 --- a/drivers/hid/hid-asus.c
 +++ b/drivers/hid/hid-asus.c
 @@ -23,6 +23,7 @@
@@ -135,7 +135,22 @@ index a1c72184e464..c1cc350b7ab8 100644
  };
  
  static int asus_report_battery(struct asus_drvdata *, u8 *, int);
-@@ -977,6 +981,87 @@ static int asus_input_mapping(struct hid_device *hdev,
+@@ -329,6 +333,14 @@ static int asus_raw_event(struct hid_device *hdev,
+ 	if (drvdata->battery && data[0] == BATTERY_REPORT_ID)
+ 		return asus_report_battery(drvdata, data, size);
+ 
++	// TODO: remove after debugging
++	// for (int i = 0; i < size; i++) {
++	// 	if (i == 0)
++	// 		printk(KERN_INFO "GOT: %02x,", data[i]);
++	// 	else
++	// 		printk(KERN_CONT "%02x,", data[i]);
++	// }
++
+ 	if (drvdata->tp && data[0] == INPUT_REPORT_ID)
+ 		return asus_report_input(drvdata, data, size);
+ 
+@@ -977,6 +989,77 @@ static int asus_input_mapping(struct hid_device *hdev,
  	return 0;
  }
  
@@ -146,35 +161,25 @@ index a1c72184e464..c1cc350b7ab8 100644
 +	return ((struct asus_drvdata*)hid_get_drvdata(hdev))->rog_ally_data;
 +}
 +
-+static ssize_t __gamepad_hid_send(struct device *raw_dev, char *hidbuf, size_t count) {
-+	struct hid_device *hdev = to_hid_device(raw_dev);
-+	int ret;
-+
-+	ret = hid_hw_raw_request(hdev, FEATURE_KBD_REPORT_ID, hidbuf,64, HID_OUTPUT_REPORT, HID_REQ_SET_REPORT);
-+	if (ret < 0) {
-+		hid_err(hdev, "Asus ROG Ally failed to send request: %d\n", ret);
-+		return ret;
-+	}
-+
-+	return count;
-+}
-+
 +// TODO: general purpose request function which checks the device is ready before setting
 +/* The gamepad mode also needs to be set on boot/mod-load and shutdown */
 +static ssize_t __gamepad_set_mode(struct device *raw_dev, int val) {
++	struct hid_device *hdev = to_hid_device(raw_dev);
 +	unsigned char *hidbuf;
++	u8 *readbuf;
 +	int ret;
 +
-+	hidbuf = kmalloc(64, GFP_KERNEL);
++	hidbuf = kzalloc(64, GFP_KERNEL);
 +	if (!hidbuf)
 +		return -ENOMEM;
++
 +	hidbuf[0] = FEATURE_KBD_REPORT_ID;
 +	hidbuf[1] = 0xD1;
 +	hidbuf[2] = ally_gamepad_cmd_set_mode;
 +	hidbuf[3] = 0x01;
 +	hidbuf[4] = val;
 +
-+	ret = __gamepad_hid_send(raw_dev, hidbuf, 64);
++	ret = asus_kbd_set_report(hdev, hidbuf, 64);
 +	if (ret < 0) {
 +		kfree(hidbuf);
 +		return ret;
@@ -223,7 +228,7 @@ index a1c72184e464..c1cc350b7ab8 100644
  static int asus_start_multitouch(struct hid_device *hdev)
  {
  	int ret;
-@@ -1113,6 +1198,34 @@ static int asus_probe(struct hid_device *hdev, const struct hid_device_id *id)
+@@ -1113,6 +1196,34 @@ static int asus_probe(struct hid_device *hdev, const struct hid_device_id *id)
  		}
  	}
  
@@ -258,7 +263,17 @@ index a1c72184e464..c1cc350b7ab8 100644
  	ret = hid_parse(hdev);
  	if (ret) {
  		hid_err(hdev, "Asus hid parse failed: %d\n", ret);
-@@ -1282,7 +1395,7 @@ static const struct hid_device_id asus_devices[] = {
+@@ -1162,6 +1273,9 @@ static void asus_remove(struct hid_device *hdev)
+ 		cancel_work_sync(&drvdata->kbd_backlight->work);
+ 	}
+ 
++	if (drvdata->rog_ally_data)
++		__gamepad_set_mode(&hdev->dev, ally_gamepad_mode_mouse);
++
+ 	hid_hw_stop(hdev);
+ }
+ 
+@@ -1282,7 +1396,7 @@ static const struct hid_device_id asus_devices[] = {
  	  QUIRK_USE_KBD_BACKLIGHT | QUIRK_ROG_NKEY_KEYBOARD },
  	{ HID_USB_DEVICE(USB_VENDOR_ID_ASUSTEK,
  	    USB_DEVICE_ID_ASUSTEK_ROG_NKEY_ALLY),
