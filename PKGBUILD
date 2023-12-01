@@ -10,7 +10,7 @@ _kernelname=-MANJARO
 pkgbase=linux${_basever}
 pkgname=("$pkgbase" "$pkgbase-headers")
 pkgver=6.6.3
-pkgrel=1
+pkgrel=2
 arch=('x86_64')
 url="https://www.kernel.org/"
 license=('GPL2')
@@ -24,10 +24,13 @@ source=(https://git.kernel.org/torvalds/t/linux-${_basekernel}.tar.gz
         0101-ZEN_Add_sysctl_and_CONFIG_to_disallow_unprivileged_CLONE_NEWUSER.patch
         0102-drivers-firmware-skip-simpledrm-if-nvidia-drm.modese.patch
         # MANJARO Patches
-        0201-asus-ally-asus-hid.patch
-        0202-mt7921e_Perform_FLR_to_recovery_the_device.patch
         # Realtek patch
         0999-patch_realtek.patch
+        # ROG ALLY Patches
+        0001-HID-asus-add-ROG-Ally-N-Key-ID-and-keycodes.patch
+        0002-HID-asus-add-ROG-Ally-gamepad-mode-setting.patch
+        0003-platform-x86-asus-wmi-disable-USB0-hub-on-ROG-Ally-b.patch
+        0004-mt7921e_Perform_FLR_to_recovery_the_device.patch
         # AMD GPU reset patches
         0301-drm-Add_GPU_reset_sysfs_event.patch
         0302-drm-amdgpu-add_work_function_for_GPU_reset_event.patch
@@ -39,11 +42,12 @@ source=(https://git.kernel.org/torvalds/t/linux-${_basekernel}.tar.gz
         ROG-ALLY-LED-fix.patch
         ROG-ALLY-NCT6775-PLATFORM.patch
         0001-ROG-ALLY-bmi323-device.patch
-        0002-usb-Add-a-mode-switch-for-the-controller-embedded-on.patch
         0004-hid-asus-Improve-function-signature.patch
-        0001-platform-x86-asus-wmi-disable-USB0-hub-on-ROG-Ally-b.patch
         # Steamdeck HID patches
         0001-HID.patch
+        # AMD patches in testing
+        0001-drm-amd-Put-dGPUs-into-D3cold-when-shutting-down-the.patch
+        0002-PCI-Only-runtime-resume-devices-during-kexec-or-with.patch
 )
 
 if [[ -z "$_rc" ]]; then
@@ -54,12 +58,14 @@ fi
 
 sha256sums=('9a72c005a62f109f96ee00552502d16c4f06c248e6baba1629506627396ac0a7'
             '8e44e146f5e7a51b38795aebf100e3d12fac192ab64aa145d09d107824160d13'
-            '04a368b5733063326648d0517eede96b268500619ff12fd1a67990b334fec19e'
+            'd39f6755041c598d619e4e943704f4bcde3e850ebaace174ad68230788082c2c'
             '05f04019d4a2ee072238c32860fa80d673687d84d78ef436ae9332b6fb788467'
             'e1d17690dd21e8d5482b63ca66bfe6b478d39e8e8b59eedd53adb0a55ebc308d'
-            '6541760a7b0513ce52c7b2d67810135b1bd172849f52765e74a5ec0c7584dd56'
-            'd673d034fbcd80426fd8d9c6af56537c5fe5b55fe49d74e313474d7fc285ecc1'
             '3aa9f1ca47bb078f3c9a52fe61897cf4fe989068cd7e66bfa6644fd605fa40d2'
+            '342ba37e162f8a62ac932f56f52514c491855cdc51ceefe4e90ff777637b1d4f'
+            'a970508d32d2651b561fd1362169aadcbf32f6b65220fc440db5f66693150da5'
+            '836e88044263f7bc474ca466b3d0d98c39e265db94925c300d0b138492946a13'
+            'd673d034fbcd80426fd8d9c6af56537c5fe5b55fe49d74e313474d7fc285ecc1'
             '1f62542a889a6c2eafd43acd0699f54720ed891eeda66a4a9261d75b92f28b7f'
             '6bc2c1b9a485c852b45e4064e8b9b559b9b26113fdc80bf9653af44c0886fde2'
             '559f01074cda3c161996617f1b7bc6cbbce0efc50e2cf9e843d60922ff2e8063'
@@ -68,10 +74,10 @@ sha256sums=('9a72c005a62f109f96ee00552502d16c4f06c248e6baba1629506627396ac0a7'
             '68a9b80e0b8d75880fbf3d8486bfe522cb19b4042554786b23bead9320165fa5'
             'cfcd5c177423df8b7b98b0500fe7ab0757f895ed945c33e205963f0069c7a3be'
             '5574a68b1c7733769835bb856a8c32e54398dfde59f264708672b87b73b3c6ea'
-            '55b1c6d6f0a76ab9b520473aa51881e4477150d176273dcd7dd238c553056d95'
             '0583bf724b0d12202506c843784a4b1acfb1305dd2d9c1914a4fd8642484e80e'
-            '836e88044263f7bc474ca466b3d0d98c39e265db94925c300d0b138492946a13'
-            '7c948773d758418d8a436067265d678c444827562c46b9fced2ff31ced108481')
+            '7c948773d758418d8a436067265d678c444827562c46b9fced2ff31ced108481'
+            '08619ace2908994b31ab970eefead1fd6558704ece9facb54f9e5f806842f594'
+            '7c9333469b5bcfbb142f03eba1ae6c4021817513e3db3c74108463fac29ab5e6')
 
 prepare() {
   cd "$_srcdir"
