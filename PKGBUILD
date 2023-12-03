@@ -10,7 +10,7 @@ _kernelname=-MANJARO
 pkgbase=linux${_basever}
 pkgname=("$pkgbase" "$pkgbase-headers")
 pkgver=6.6.4
-pkgrel=1
+pkgrel=2
 arch=('x86_64')
 url="https://www.kernel.org/"
 license=('GPL2')
@@ -27,7 +27,7 @@ source=(https://git.kernel.org/torvalds/t/linux-${_basekernel}.tar.gz
         # Realtek patch
         0999-patch_realtek.patch
         # ROG ALLY Patches
-        06ae5afce8cc1f7621cc5c7751e449ce20d68af7.patch
+        0000-hid-asus-add-const-to-read-only-outgoing-usb-buffer.patch
         0001-HID-asus-fix-more-n-key-report-descriptors-if-n-k.patch
         0002-HID-asus-make-asus_kbd_init-generic-remove-rog_nk.patch
         0003-HID-asus-add-ROG-Ally-N-Key-ID-and-keycodes.patch
@@ -35,6 +35,7 @@ source=(https://git.kernel.org/torvalds/t/linux-${_basekernel}.tar.gz
         0005-HID-asus-add-ROG-Ally-joystick-and-trigger-deadzo.patch
         0006-platform-x86-asus-wmi-disable-USB0-hub-on-ROG-Ally-b.patch
         0007-mt7921e_Perform_FLR_to_recovery_the_device.patch
+        0008-hid-asus-reset-the-backlight-brightness-level-on-resume.patch
         # AMD GPU reset patches
         0301-drm-Add_GPU_reset_sysfs_event.patch
         0302-drm-amdgpu-add_work_function_for_GPU_reset_event.patch
@@ -73,6 +74,7 @@ sha256sums=('9a72c005a62f109f96ee00552502d16c4f06c248e6baba1629506627396ac0a7'
             'd6c0ec0246bb57e50a4112f8ca09c790deccec0aae69804b3a98203f3eadfb1d'
             '836e88044263f7bc474ca466b3d0d98c39e265db94925c300d0b138492946a13'
             'd673d034fbcd80426fd8d9c6af56537c5fe5b55fe49d74e313474d7fc285ecc1'
+            '45f4149e74a58ae11bca9efcff54520ebc23c18ee91185b76e2b901075d9cd4b'
             '1f62542a889a6c2eafd43acd0699f54720ed891eeda66a4a9261d75b92f28b7f'
             '6bc2c1b9a485c852b45e4064e8b9b559b9b26113fdc80bf9653af44c0886fde2'
             '559f01074cda3c161996617f1b7bc6cbbce0efc50e2cf9e843d60922ff2e8063'
