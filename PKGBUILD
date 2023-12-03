@@ -9,8 +9,8 @@ _basever=${_basekernel//.}
 _kernelname=-MANJARO
 pkgbase=linux${_basever}
 pkgname=("$pkgbase" "$pkgbase-headers")
-pkgver=6.6.3
-pkgrel=2
+pkgver=6.6.4
+pkgrel=1
 arch=('x86_64')
 url="https://www.kernel.org/"
 license=('GPL2')
@@ -27,10 +27,14 @@ source=(https://git.kernel.org/torvalds/t/linux-${_basekernel}.tar.gz
         # Realtek patch
         0999-patch_realtek.patch
         # ROG ALLY Patches
-        0001-HID-asus-add-ROG-Ally-N-Key-ID-and-keycodes.patch
-        0002-HID-asus-add-ROG-Ally-gamepad-mode-setting.patch
-        0003-platform-x86-asus-wmi-disable-USB0-hub-on-ROG-Ally-b.patch
-        0004-mt7921e_Perform_FLR_to_recovery_the_device.patch
+        06ae5afce8cc1f7621cc5c7751e449ce20d68af7.patch
+        0001-HID-asus-fix-more-n-key-report-descriptors-if-n-k.patch
+        0002-HID-asus-make-asus_kbd_init-generic-remove-rog_nk.patch
+        0003-HID-asus-add-ROG-Ally-N-Key-ID-and-keycodes.patch
+        0004-HID-asus-add-ROG-Ally-gamepad-mode-setting.patch
+        0005-HID-asus-add-ROG-Ally-joystick-and-trigger-deadzo.patch
+        0006-platform-x86-asus-wmi-disable-USB0-hub-on-ROG-Ally-b.patch
+        0007-mt7921e_Perform_FLR_to_recovery_the_device.patch
         # AMD GPU reset patches
         0301-drm-Add_GPU_reset_sysfs_event.patch
         0302-drm-amdgpu-add_work_function_for_GPU_reset_event.patch
@@ -39,7 +43,6 @@ source=(https://git.kernel.org/torvalds/t/linux-${_basekernel}.tar.gz
         0001-ALSA-hda-cs35l41-Support-ASUS-2023-laptops-with-miss.patch
         0001-ALSA-hda-cs35l41-Improve-support-for-ASUS-ROG-Ally.patch
         # Additional ALLY patches
-        ROG-ALLY-LED-fix.patch
         ROG-ALLY-NCT6775-PLATFORM.patch
         0001-ROG-ALLY-bmi323-device.patch
         0004-hid-asus-Improve-function-signature.patch
@@ -57,13 +60,17 @@ else
 fi
 
 sha256sums=('9a72c005a62f109f96ee00552502d16c4f06c248e6baba1629506627396ac0a7'
-            '8e44e146f5e7a51b38795aebf100e3d12fac192ab64aa145d09d107824160d13'
+            '99f8aea63f48d0650ccdd7c6ab159fdc09e527922d6953067c32befffe7c0df4'
             'd39f6755041c598d619e4e943704f4bcde3e850ebaace174ad68230788082c2c'
             '05f04019d4a2ee072238c32860fa80d673687d84d78ef436ae9332b6fb788467'
             'e1d17690dd21e8d5482b63ca66bfe6b478d39e8e8b59eedd53adb0a55ebc308d'
             '3aa9f1ca47bb078f3c9a52fe61897cf4fe989068cd7e66bfa6644fd605fa40d2'
-            'cf277f8226a122acd97e9489db806128bb8ff4bede5a304dc913415bd235d4ae'
-            '55d81e1191d8d7b4ce5c9afcf0de267f19cbac5b71b55c33905b41ca957dd343'
+            'fb2cd8a3ea9d47bd78c99b8ece1f3959c20b4de97a7959a12650f989f5c724da'
+            'b95ffa45bab71fe7cad645255832a967a50cdaa2e9136ef09392edecba4e7b78'
+            '632109f96e395aa9cb42efef75f944229e1aaf0076f497cac1b6baf19296d082'
+            '8ac597391f6fc2bbbf0c86218abd2334d7d4efe0e52e1413e0868d2e03898920'
+            '10b7eb9a83595fc17aa9457b5fdb822cc92126ed55382d352fab91e93600f4d5'
+            'd6c0ec0246bb57e50a4112f8ca09c790deccec0aae69804b3a98203f3eadfb1d'
             '836e88044263f7bc474ca466b3d0d98c39e265db94925c300d0b138492946a13'
             'd673d034fbcd80426fd8d9c6af56537c5fe5b55fe49d74e313474d7fc285ecc1'
             '1f62542a889a6c2eafd43acd0699f54720ed891eeda66a4a9261d75b92f28b7f'
@@ -71,10 +78,9 @@ sha256sums=('9a72c005a62f109f96ee00552502d16c4f06c248e6baba1629506627396ac0a7'
             '559f01074cda3c161996617f1b7bc6cbbce0efc50e2cf9e843d60922ff2e8063'
             '79970a4729572cb25fd4644d66f38ecd5b3e1610a42ea4bbe436b501f3469fa2'
             '430a7f971d78d0873708e0ad38fba602ceafefd4da8ebbf9d9c591bc4799acb5'
-            '68a9b80e0b8d75880fbf3d8486bfe522cb19b4042554786b23bead9320165fa5'
             'cfcd5c177423df8b7b98b0500fe7ab0757f895ed945c33e205963f0069c7a3be'
             '5574a68b1c7733769835bb856a8c32e54398dfde59f264708672b87b73b3c6ea'
-            '0583bf724b0d12202506c843784a4b1acfb1305dd2d9c1914a4fd8642484e80e'
+            '8a2fc3fff90f8e82006e3945acdfd311b9bef672474af4730f17d8f471c2fbc8'
             '7c948773d758418d8a436067265d678c444827562c46b9fced2ff31ced108481'
             '08619ace2908994b31ab970eefead1fd6558704ece9facb54f9e5f806842f594'
             '7c9333469b5bcfbb142f03eba1ae6c4021817513e3db3c74108463fac29ab5e6')

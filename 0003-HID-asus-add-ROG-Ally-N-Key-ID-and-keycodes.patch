@@ -1,7 +1,7 @@
-From 04556aa27fe720170afe6f92f71bc9c0628483ed Mon Sep 17 00:00:00 2001
+From 2b1a33a519668105eb7261c2d8964da576be6146 Mon Sep 17 00:00:00 2001
 From: "Luke D. Jones" <luke@ljones.dev>
 Date: Wed, 29 Nov 2023 22:18:11 +1300
-Subject: [PATCH v2 1/2] HID: asus: add ROG Ally N-Key ID and keycodes
+Subject: [PATCH v5 3/5] HID: asus: add ROG Ally N-Key ID and keycodes
 
 ---
  drivers/hid/hid-asus.c | 7 +++++++
@@ -9,10 +9,10 @@ Subject: [PATCH v2 1/2] HID: asus: add ROG Ally N-Key ID and keycodes
  2 files changed, 8 insertions(+)
 
 diff --git a/drivers/hid/hid-asus.c b/drivers/hid/hid-asus.c
-index 78cdfb8b9a7a..a1c72184e464 100644
+index cdd998a761fe..3a1a6024d299 100644
 --- a/drivers/hid/hid-asus.c
 +++ b/drivers/hid/hid-asus.c
-@@ -897,6 +897,10 @@ static int asus_input_mapping(struct hid_device *hdev,
+@@ -847,6 +847,10 @@ static int asus_input_mapping(struct hid_device *hdev,
  		case 0xb3: asus_map_key_clear(KEY_PROG3);	break; /* Fn+Left next aura */
  		case 0x6a: asus_map_key_clear(KEY_F13);		break; /* Screenpad toggle */
  		case 0x4b: asus_map_key_clear(KEY_F14);		break; /* Arrows/Pg-Up/Dn toggle */
@@ -23,7 +23,7 @@ index 78cdfb8b9a7a..a1c72184e464 100644
  
  
  		default:
-@@ -1276,6 +1280,9 @@ static const struct hid_device_id asus_devices[] = {
+@@ -1239,6 +1243,9 @@ static const struct hid_device_id asus_devices[] = {
  	{ HID_USB_DEVICE(USB_VENDOR_ID_ASUSTEK,
  	    USB_DEVICE_ID_ASUSTEK_ROG_NKEY_KEYBOARD3),
  	  QUIRK_USE_KBD_BACKLIGHT | QUIRK_ROG_NKEY_KEYBOARD },

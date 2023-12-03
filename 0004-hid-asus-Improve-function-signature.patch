@@ -11,13 +11,7 @@ diff --git a/drivers/hid/hid-asus.c b/drivers/hid/hid-asus.c
 index 3b3ae9e5b4ae..16bf3512a43b 100644
 --- a/drivers/hid/hid-asus.c
 +++ b/drivers/hid/hid-asus.c
-@@ -1045,12 +1045,12 @@ static int asus_raw_event(struct hid_device *hdev,
- 	return 0;
- }
- 
--static int asus_kbd_set_report(struct hid_device *hdev, u8 *buf, size_t buf_size)
-+static int asus_kbd_set_report(struct hid_device *hdev, const u8 *buf, size_t buf_size)
- {
+@@ -386,7 +386,7 @@ static int asus_kbd_set_report(struct hi
  	unsigned char *dmabuf;
  	int ret;
  
