@@ -10,7 +10,7 @@ _kernelname=-MANJARO
 pkgbase=linux${_basever}
 pkgname=("$pkgbase" "$pkgbase-headers")
 pkgver=6.6.4
-pkgrel=2
+pkgrel=3
 arch=('x86_64')
 url="https://www.kernel.org/"
 license=('GPL2')
@@ -67,11 +67,11 @@ sha256sums=('9a72c005a62f109f96ee00552502d16c4f06c248e6baba1629506627396ac0a7'
             'e1d17690dd21e8d5482b63ca66bfe6b478d39e8e8b59eedd53adb0a55ebc308d'
             '3aa9f1ca47bb078f3c9a52fe61897cf4fe989068cd7e66bfa6644fd605fa40d2'
             'fb2cd8a3ea9d47bd78c99b8ece1f3959c20b4de97a7959a12650f989f5c724da'
-            'b95ffa45bab71fe7cad645255832a967a50cdaa2e9136ef09392edecba4e7b78'
-            '632109f96e395aa9cb42efef75f944229e1aaf0076f497cac1b6baf19296d082'
-            '8ac597391f6fc2bbbf0c86218abd2334d7d4efe0e52e1413e0868d2e03898920'
-            '10b7eb9a83595fc17aa9457b5fdb822cc92126ed55382d352fab91e93600f4d5'
-            'd6c0ec0246bb57e50a4112f8ca09c790deccec0aae69804b3a98203f3eadfb1d'
+            'da53d7b6fe84a9808cbf3c930644d79f2a877fc1a2e376a9b8d8951862788dba'
+            '6c1f61d7b4b660ff0e3cdd4700682a9f35282ac07e2c21521e45df7462490eb4'
+            '954dec6157ba598bee82cf036ef41741911f4c0fac1ac9bb3fd69f2529673218'
+            '2c545e7625bedd6df8e87ee113980a51925b58b3fc41c007861b9925a67dd43a'
+            'bfd1b0dd9b255785ddd8c0ae4909d706f43705073725898a91e95d8ea5ab2134'
             '836e88044263f7bc474ca466b3d0d98c39e265db94925c300d0b138492946a13'
             'd673d034fbcd80426fd8d9c6af56537c5fe5b55fe49d74e313474d7fc285ecc1'
             '45f4149e74a58ae11bca9efcff54520ebc23c18ee91185b76e2b901075d9cd4b'

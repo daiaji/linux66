@@ -1,7 +1,7 @@
-From 78041d58035883773c5a564ec7bbe09a11f4d5ab Mon Sep 17 00:00:00 2001
+From 4b2f65a76dafd3166590f98a78a50227d8a83c58 Mon Sep 17 00:00:00 2001
 From: "Luke D. Jones" <luke@ljones.dev>
 Date: Fri, 1 Dec 2023 23:14:36 +1300
-Subject: [PATCH v5 5/5] HID: asus: add ROG Ally joystick and trigger deadzones
+Subject: [PATCH v6 5/5] HID: asus: add ROG Ally joystick and trigger deadzones
 
 Signed-off-by: Luke D. Jones <luke@ljones.dev>
 ---
@@ -51,7 +51,7 @@ index 07799d1c7392..614a8b9182ba 100644
 +	u8 deadzones[2][4];
  };
 diff --git a/drivers/hid/hid-asus.c b/drivers/hid/hid-asus.c
-index 2eef59082c9c..a4dae0166fce 100644
+index b27a1c26c33f..f1d8708c0f67 100644
 --- a/drivers/hid/hid-asus.c
 +++ b/drivers/hid/hid-asus.c
 @@ -335,6 +335,16 @@ static int asus_raw_event(struct hid_device *hdev,
@@ -71,7 +71,7 @@ index 2eef59082c9c..a4dae0166fce 100644
  	if (drvdata->tp && data[0] == INPUT_REPORT_ID)
  		return asus_report_input(drvdata, data, size);
  
-@@ -1044,6 +1054,144 @@ static ssize_t gamepad_mode_store(struct device *raw_dev, struct device_attribut
+@@ -1060,6 +1070,144 @@ static ssize_t gamepad_mode_store(struct device *raw_dev, struct device_attribut
  
  DEVICE_ATTR_RW(gamepad_mode);
  
@@ -111,8 +111,8 @@ index 2eef59082c9c..a4dae0166fce 100644
 +	hidbuf[3] = 0x04; // length
 +	hidbuf[4] = rog_ally->deadzones[is_js][0];
 +	hidbuf[5] = rog_ally->deadzones[is_js][1];
-+	hidbuf[6] = rog_ally->deadzones[is_js][3];
-+	hidbuf[7] = rog_ally->deadzones[is_js][4];
++	hidbuf[6] = rog_ally->deadzones[is_js][2];
++	hidbuf[7] = rog_ally->deadzones[is_js][3];
 +
 +	ret = asus_kbd_set_report(hdev, hidbuf, FEATURE_ROG_ALLY_REPORT_SIZE);
 +	kfree(hidbuf);
@@ -182,7 +182,7 @@ index 2eef59082c9c..a4dae0166fce 100644
 +	NULL
 +};
 +static const struct attribute_group ally_controller_joystick_left_attr_group = {
-+	.name = "joystick_left",
++	.name = "axis_xy_left",
 +	.attrs = gamepad_joystick_left_attrs,
 +};
 +
@@ -191,7 +191,7 @@ index 2eef59082c9c..a4dae0166fce 100644
 +	NULL
 +};
 +static const struct attribute_group ally_controller_joystick_right_attr_group = {
-+	.name = "joystick_right",
++	.name = "axis_xy_right",
 +	.attrs = gamepad_joystick_right_attrs,
 +};
 +
@@ -200,7 +200,7 @@ index 2eef59082c9c..a4dae0166fce 100644
 +	NULL
 +};
 +static const struct attribute_group ally_controller_trigger_left_attr_group = {
-+	.name = "trigger_left",
++	.name = "axis_z_left",
 +	.attrs = gamepad_trigger_left_attrs,
 +};
 +
@@ -209,14 +209,14 @@ index 2eef59082c9c..a4dae0166fce 100644
 +	NULL
 +};
 +static const struct attribute_group ally_controller_trigger_right_attr_group = {
-+	.name = "trigger_right",
++	.name = "axis_z_right",
 +	.attrs = gamepad_trigger_right_attrs,
 +};
 +
  static struct attribute *gamepad_device_attrs[] = {
  	&dev_attr_gamepad_mode.attr,
  	NULL
-@@ -1053,6 +1201,15 @@ static const struct attribute_group ally_controller_attr_group = {
+@@ -1069,6 +1217,15 @@ static const struct attribute_group ally_controller_attr_group = {
  	.attrs = gamepad_device_attrs,
  };
  
@@ -232,7 +232,7 @@ index 2eef59082c9c..a4dae0166fce 100644
  static int asus_start_multitouch(struct hid_device *hdev)
  {
  	int ret;
-@@ -1209,14 +1366,17 @@ static int asus_probe(struct hid_device *hdev, const struct hid_device_id *id)
+@@ -1225,14 +1382,17 @@ static int asus_probe(struct hid_device *hdev, const struct hid_device_id *id)
  					goto err_stop_hw;
  				}
  				drvdata->rog_ally_data->mode = ally_gamepad_mode_game;
@@ -252,7 +252,7 @@ index 2eef59082c9c..a4dae0166fce 100644
  				goto err_stop_hw;
  		}
  	}
-@@ -1272,7 +1432,7 @@ static void asus_remove(struct hid_device *hdev)
+@@ -1288,7 +1448,7 @@ static void asus_remove(struct hid_device *hdev)
  
  	if (drvdata->rog_ally_data) {
  		__gamepad_set_mode(&hdev->dev, ally_gamepad_mode_mouse);
