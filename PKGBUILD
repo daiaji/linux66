@@ -10,7 +10,7 @@ _kernelname=-MANJARO
 pkgbase=linux${_basever}
 pkgname=("$pkgbase" "$pkgbase-headers")
 pkgver=6.6.4
-pkgrel=3
+pkgrel=4
 arch=('x86_64')
 url="https://www.kernel.org/"
 license=('GPL2')
@@ -31,11 +31,9 @@ source=(https://git.kernel.org/torvalds/t/linux-${_basekernel}.tar.gz
         0001-HID-asus-fix-more-n-key-report-descriptors-if-n-k.patch
         0002-HID-asus-make-asus_kbd_init-generic-remove-rog_nk.patch
         0003-HID-asus-add-ROG-Ally-N-Key-ID-and-keycodes.patch
-        0004-HID-asus-add-ROG-Ally-gamepad-mode-setting.patch
-        0005-HID-asus-add-ROG-Ally-joystick-and-trigger-deadzo.patch
+        0004-HID-asus-add-ROG-Ally-xpad-settings.patch
         0006-platform-x86-asus-wmi-disable-USB0-hub-on-ROG-Ally-b.patch
         0007-mt7921e_Perform_FLR_to_recovery_the_device.patch
-        0008-hid-asus-reset-the-backlight-brightness-level-on-resume.patch
         # AMD GPU reset patches
         0301-drm-Add_GPU_reset_sysfs_event.patch
         0302-drm-amdgpu-add_work_function_for_GPU_reset_event.patch
@@ -46,7 +44,6 @@ source=(https://git.kernel.org/torvalds/t/linux-${_basekernel}.tar.gz
         # Additional ALLY patches
         ROG-ALLY-NCT6775-PLATFORM.patch
         0001-ROG-ALLY-bmi323-device.patch
-        0004-hid-asus-Improve-function-signature.patch
         # Steamdeck HID patches
         0001-HID.patch
         # AMD patches in testing
@@ -67,14 +64,12 @@ sha256sums=('9a72c005a62f109f96ee00552502d16c4f06c248e6baba1629506627396ac0a7'
             'e1d17690dd21e8d5482b63ca66bfe6b478d39e8e8b59eedd53adb0a55ebc308d'
             '3aa9f1ca47bb078f3c9a52fe61897cf4fe989068cd7e66bfa6644fd605fa40d2'
             'fb2cd8a3ea9d47bd78c99b8ece1f3959c20b4de97a7959a12650f989f5c724da'
-            'da53d7b6fe84a9808cbf3c930644d79f2a877fc1a2e376a9b8d8951862788dba'
-            '6c1f61d7b4b660ff0e3cdd4700682a9f35282ac07e2c21521e45df7462490eb4'
-            '954dec6157ba598bee82cf036ef41741911f4c0fac1ac9bb3fd69f2529673218'
-            '2c545e7625bedd6df8e87ee113980a51925b58b3fc41c007861b9925a67dd43a'
-            'bfd1b0dd9b255785ddd8c0ae4909d706f43705073725898a91e95d8ea5ab2134'
+            '98d586021776b8ca9a6fba5f53d09b429585a0cfe3773d2d49acb8553fc70aad'
+            '997a1037ef59738502fbb072ac6c19d22e0df9049430858f9a938447a5163803'
+            '3f2da7f0a96c8f869607397335bae09436ade5bbee6aa3b5babab29e2b4411f4'
+            '8ba76e614d5264bac027f9ed9d88504b41d163646f3483a223b76f2644dd596a'
             '836e88044263f7bc474ca466b3d0d98c39e265db94925c300d0b138492946a13'
             'd673d034fbcd80426fd8d9c6af56537c5fe5b55fe49d74e313474d7fc285ecc1'
-            '45f4149e74a58ae11bca9efcff54520ebc23c18ee91185b76e2b901075d9cd4b'
             '1f62542a889a6c2eafd43acd0699f54720ed891eeda66a4a9261d75b92f28b7f'
             '6bc2c1b9a485c852b45e4064e8b9b559b9b26113fdc80bf9653af44c0886fde2'
             '559f01074cda3c161996617f1b7bc6cbbce0efc50e2cf9e843d60922ff2e8063'
@@ -82,7 +77,6 @@ sha256sums=('9a72c005a62f109f96ee00552502d16c4f06c248e6baba1629506627396ac0a7'
             '430a7f971d78d0873708e0ad38fba602ceafefd4da8ebbf9d9c591bc4799acb5'
             'cfcd5c177423df8b7b98b0500fe7ab0757f895ed945c33e205963f0069c7a3be'
             '5574a68b1c7733769835bb856a8c32e54398dfde59f264708672b87b73b3c6ea'
-            '8a2fc3fff90f8e82006e3945acdfd311b9bef672474af4730f17d8f471c2fbc8'
             '7c948773d758418d8a436067265d678c444827562c46b9fced2ff31ced108481'
             '08619ace2908994b31ab970eefead1fd6558704ece9facb54f9e5f806842f594'
             '7c9333469b5bcfbb142f03eba1ae6c4021817513e3db3c74108463fac29ab5e6')
