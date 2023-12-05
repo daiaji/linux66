@@ -28,6 +28,7 @@ source=(https://git.kernel.org/torvalds/t/linux-${_basekernel}.tar.gz
         0999-patch_realtek.patch
         # ROG ALLY Patches
         0000-hid-asus-add-const-to-read-only-outgoing-usb-buffer.patch
+        0001-hid-asus-reset-the-backlight-brightness-level-on-resume.patch
         0001-HID-asus-fix-more-n-key-report-descriptors-if-n-k.patch
         0002-HID-asus-make-asus_kbd_init-generic-remove-rog_nk.patch
         0003-HID-asus-add-ROG-Ally-N-Key-ID-and-keycodes.patch
@@ -64,6 +65,7 @@ sha256sums=('9a72c005a62f109f96ee00552502d16c4f06c248e6baba1629506627396ac0a7'
             'e1d17690dd21e8d5482b63ca66bfe6b478d39e8e8b59eedd53adb0a55ebc308d'
             '3aa9f1ca47bb078f3c9a52fe61897cf4fe989068cd7e66bfa6644fd605fa40d2'
             'fb2cd8a3ea9d47bd78c99b8ece1f3959c20b4de97a7959a12650f989f5c724da'
+            '7f3194f1a7c5ebc27bbfa4559cfd9a2ccffddbbd2d259c0d9c68631cb66c5855'
             '98d586021776b8ca9a6fba5f53d09b429585a0cfe3773d2d49acb8553fc70aad'
             '997a1037ef59738502fbb072ac6c19d22e0df9049430858f9a938447a5163803'
             '3f2da7f0a96c8f869607397335bae09436ade5bbee6aa3b5babab29e2b4411f4'
