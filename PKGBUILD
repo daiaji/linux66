@@ -10,7 +10,7 @@ _kernelname=-MANJARO
 pkgbase=linux${_basever}
 pkgname=("$pkgbase" "$pkgbase-headers")
 pkgver=6.6.4
-pkgrel=4
+pkgrel=5
 arch=('x86_64')
 url="https://www.kernel.org/"
 license=('GPL2')
@@ -47,9 +47,6 @@ source=(https://git.kernel.org/torvalds/t/linux-${_basekernel}.tar.gz
         0001-ROG-ALLY-bmi323-device.patch
         # Steamdeck HID patches
         0001-HID.patch
-        # AMD patches in testing
-        0001-drm-amd-Put-dGPUs-into-D3cold-when-shutting-down-the.patch
-        0002-PCI-Only-runtime-resume-devices-during-kexec-or-with.patch
 )
 
 if [[ -z "$_rc" ]]; then
@@ -79,9 +76,7 @@ sha256sums=('9a72c005a62f109f96ee00552502d16c4f06c248e6baba1629506627396ac0a7'
             '430a7f971d78d0873708e0ad38fba602ceafefd4da8ebbf9d9c591bc4799acb5'
             'cfcd5c177423df8b7b98b0500fe7ab0757f895ed945c33e205963f0069c7a3be'
             '5574a68b1c7733769835bb856a8c32e54398dfde59f264708672b87b73b3c6ea'
-            '7c948773d758418d8a436067265d678c444827562c46b9fced2ff31ced108481'
-            '08619ace2908994b31ab970eefead1fd6558704ece9facb54f9e5f806842f594'
-            '7c9333469b5bcfbb142f03eba1ae6c4021817513e3db3c74108463fac29ab5e6')
+            '7c948773d758418d8a436067265d678c444827562c46b9fced2ff31ced108481')
 
 prepare() {
   cd "$_srcdir"
