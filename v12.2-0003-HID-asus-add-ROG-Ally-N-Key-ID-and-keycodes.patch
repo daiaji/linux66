@@ -1,7 +1,7 @@
 From 2b1a33a519668105eb7261c2d8964da576be6146 Mon Sep 17 00:00:00 2001
 From: "Luke D. Jones" <luke@ljones.dev>
 Date: Wed, 29 Nov 2023 22:18:11 +1300
-Subject: [PATCH v10 3/4] HID: asus: add ROG Ally N-Key ID and keycodes
+Subject: [PATCH v12.2 3/4] HID: asus: add ROG Ally N-Key ID and keycodes
 
 ---
  drivers/hid/hid-asus.c | 7 +++++++
