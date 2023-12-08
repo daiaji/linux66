@@ -1,29 +1,113 @@
-From 68eb99dc14acf582de64847810bf31b51fa04183 Mon Sep 17 00:00:00 2001
+From 65783d673426cd9503812625eb5a4e24b5bbb4ea Mon Sep 17 00:00:00 2001
 From: "Luke D. Jones" <luke@ljones.dev>
 Date: Fri, 1 Dec 2023 16:57:19 +1300
-Subject: [PATCH v12.2 4/4] HID: asus: add ROG Ally xpad settings
+Subject: [PATCH v13 4/4] HID: asus: add ROG Ally xpad settings
 
 - move ROG specific stuff to new .c
 - add a header for common parts
 - add xpad mode
 - add deadzones
+- add anti-deadzones
 - add gamepad button remapping
 - add gamepad mapping reset for xpad and wasd modes
 - add turbo mode for individual buttons
-
-Signed-off-by: Luke D. Jones <luke@ljones.dev>
+- add joystick response curves
+- add vibration intensity settings
 ---
- drivers/hid/Makefile                        |    2 +
- drivers/hid/{hid-asus.c => hid-asus-core.c} |   71 +-
- drivers/hid/hid-asus-rog.c                  | 1204 +++++++++++++++++++
- drivers/hid/hid-asus-rog.h                  |  380 ++++++
- drivers/hid/hid-asus.h                      |   58 +
- 5 files changed, 1674 insertions(+), 41 deletions(-)
+ .../ABI/testing/sysfs-driver-hid-asus         |   74 +
+ drivers/hid/Makefile                          |    2 +
+ drivers/hid/{hid-asus.c => hid-asus-core.c}   |   71 +-
+ drivers/hid/hid-asus-rog.c                    | 1258 +++++++++++++++++
+ drivers/hid/hid-asus-rog.h                    |  444 ++++++
+ drivers/hid/hid-asus.h                        |   58 +
+ 6 files changed, 1866 insertions(+), 41 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-driver-hid-asus
  rename drivers/hid/{hid-asus.c => hid-asus-core.c} (96%)
  create mode 100644 drivers/hid/hid-asus-rog.c
  create mode 100644 drivers/hid/hid-asus-rog.h
  create mode 100644 drivers/hid/hid-asus.h
 
+diff --git a/Documentation/ABI/testing/sysfs-driver-hid-asus b/Documentation/ABI/testing/sysfs-driver-hid-asus
+new file mode 100644
+index 000000000000..fa822ef95cba
+--- /dev/null
++++ b/Documentation/ABI/testing/sysfs-driver-hid-asus
+@@ -0,0 +1,74 @@
++What:		/sys/bus/usb/devices/1-3:1.0/0003:0B05:1ABE.0001/gamepad_mode
++Date:		December 2023
++Contact:	linux-input@vger.kernel.org
++Description:	Set the mode the ROG Ally xpad operates in:
++		- 1 = Game mode
++		- 2 = WASD mode
++		- 3 = Mouse mode
++		This setting applies instantly and applies settings that were previously changed
++		under that mode which are:
++		- deadzones
++		- anti-deadzones
++		- button mapping
++		- button turbo settings
++		- response curves
++
++What:		/sys/bus/usb/devices/1-3:1.0/0003:0B05:1ABE.0001/apply
++Date:		December 2023
++Contact:	linux-input@vger.kernel.org
++Description:	Apply the settings that have been stored in attributes so far. Because there are
++		many individual settings across a dozen packets this separation is required to
++		prevent spamming the MCU when userspace applications apply many changes at once.
++
++What:		/sys/bus/usb/devices/1-3:1.0/0003:0B05:1ABE.0001/reset_btn_mapping
++Date:		December 2023
++Contact:	linux-input@vger.kernel.org
++Description:	Reset a gamepad mode to its default button mapping.
++
++What:		/sys/bus/usb/devices/1-3:1.0/0003:0B05:1ABE.0001/axis_<x/y/z>_<left/right>/deadzone
++Date:		December 2023
++Contact:	linux-input@vger.kernel.org
++Description:	Set the inner and outer deadzones of joysticks and triggers. These settings are not
++		written to the MCU until `apply` is set.
++		- range 0-64 (corresponds to 0-100%)
++
++What:		/sys/bus/usb/devices/1-3:1.0/0003:0B05:1ABE.0001/axis_<x/y/z>_<left/right>/deadzone_index
++Date:		December 2023
++Contact:	linux-input@vger.kernel.org
++Description:	Descriptive labels for joystick deadzone array.
++
++What:		/sys/bus/usb/devices/1-3:1.0/0003:0B05:1ABE.0001/axis_<x/y>_<left/right>/anti-deadzone
++Date:		December 2023
++Contact:	linux-input@vger.kernel.org
++Description:	Set the joystick anti-deadzone feature:
++		- range 0-64 (corresponds to 0-100%)
++
++What:		/sys/bus/usb/devices/1-3:1.0/0003:0B05:1ABE.0001/axis_<x/y>_<left/right>/rc_point<n>
++Date:		December 2023
++Contact:	linux-input@vger.kernel.org
++Description:	Set the joystick response curve. There are 4 points available with 1 being the lowest
++		point and 4 being the highest point.
++		- range 0-64 (corresponds to 0-100%)
++
++What:		/sys/bus/usb/devices/1-3:1.0/0003:0B05:1ABE.0001/axis_<x/y>_<left/right>/rc_point_index
++Date:		December 2023
++Contact:	linux-input@vger.kernel.org
++Description:	Descriptive labels for joystick response curve points.
++
++What:		/sys/bus/usb/devices/1-3:1.0/0003:0B05:1ABE.0001/btn_<label>/turbo
++Date:		December 2023
++Contact:	linux-input@vger.kernel.org
++Description:	Set the turbo mode of the button:
++		- 0 = no turbo, a separate press and release is registered on press and release
++		- 1-16 = interval between presses if button held down in steps of 1000ms/16
++		These settings are not written to the MCU until `apply` is set.
++
++What:		/sys/bus/usb/devices/1-3:1.0/0003:0B05:1ABE.0001/vibration_intensity
++Date:		December 2023
++Contact:	linux-input@vger.kernel.org
++Description:	Set the vibration intensity for left and right haptics. Applies instantly.
++
++What:		/sys/bus/usb/devices/1-3:1.0/0003:0B05:1ABE.0001/vibration_intensity_index
++Date:		December 2023
++Contact:	linux-input@vger.kernel.org
++Description:	Descriptive labels for index points of vibration_intensity.
+\ No newline at end of file
 diff --git a/drivers/hid/Makefile b/drivers/hid/Makefile
 index 8a06d0f840bc..7c2436ed05d6 100644
 --- a/drivers/hid/Makefile
@@ -201,10 +285,10 @@ index 3a1a6024d299..026705c43ee1 100644
  	  QUIRK_ROG_CLAYMORE_II_KEYBOARD },
 diff --git a/drivers/hid/hid-asus-rog.c b/drivers/hid/hid-asus-rog.c
 new file mode 100644
-index 000000000000..8dc7df3c5cd5
+index 000000000000..d319c9b611af
 --- /dev/null
 +++ b/drivers/hid/hid-asus-rog.c
-@@ -0,0 +1,1204 @@
+@@ -0,0 +1,1258 @@
 +// SPDX-License-Identifier: GPL-2.0-or-later
 +/*
 + *  HID driver for Asus ROG laptops and Ally
@@ -228,12 +312,12 @@ index 000000000000..8dc7df3c5cd5
 +	 * triggers: 2 bytes: lower, upper
 +	 * min/max: 0-64
 +	 */
-+	u8 deadzones[2][4];
++	u8 deadzones[xpad_mode_mouse][2][4];
 +	/*
 +	 * index: left, right
 +	 * max: 64
 +	 */
-+	u8 vibration_intensity[2];
++	u8 vibration_intensity[xpad_mode_mouse][2];
 +	/*
 +	 * index: [joysticks][2 byte stepping per point]
 +	 * - 4 points of 2 bytes each
@@ -242,12 +326,12 @@ index 000000000000..8dc7df3c5cd5
 +	 * - min/max: 1-63
 +	 */
 +	bool supports_response_curves;
-+	u8 response_curve[2][8];
++	u8 response_curve[xpad_mode_mouse][2][8];
 +	/*
 +	 * left = byte 0, right = byte 1
 +	 */
 +	bool supports_anti_deadzones;
-+	u8 anti_deadzones[2];
++	u8 anti_deadzones[xpad_mode_mouse][2];
 +	/*
 +	 * index: [mode][phys pair][b1, b1 secondary, b2, b2 secondary, blocks of 11]
 +	*/
@@ -255,7 +339,7 @@ index 000000000000..8dc7df3c5cd5
 +	/*
 +	 *
 +	*/
-+	u8 turbo_btns[TURBO_BLOCK_LEN];
++	u8 turbo_btns[xpad_mode_mouse][TURBO_BLOCK_LEN];
 +};
 +
 +static struct asus_rog_ally *__rog_ally_data(struct device *raw_dev)
@@ -329,225 +413,123 @@ index 000000000000..8dc7df3c5cd5
 +	STR_TO_CODE_ELIF(2, 0x10, KB_F14)
 +	STR_TO_CODE_ELIF(2, 0x18, KB_F15)
 +
-+	else if (!strcmp(buf, KB_BACKTICK))
-+		out[2] = 0x0e;
-+	else if (!strcmp(buf, KB_1))
-+		out[2] = 0x16;
-+	else if (!strcmp(buf, KB_2))
-+		out[2] = 0x1e;
-+	else if (!strcmp(buf, KB_3))
-+		out[2] = 0x26;
-+	else if (!strcmp(buf, KB_4))
-+		out[2] = 0x25;
-+	else if (!strcmp(buf, KB_5))
-+		out[2] = 0x2e;
-+	else if (!strcmp(buf, KB_6))
-+		out[2] = 0x36;
-+	else if (!strcmp(buf, KB_7))
-+		out[2] = 0x3d;
-+	else if (!strcmp(buf, KB_8))
-+		out[2] = 0x3e;
-+	else if (!strcmp(buf, KB_9))
-+		out[2] = 0x46;
-+	else if (!strcmp(buf, KB_0))
-+		out[2] = 0x45;
-+	else if (!strcmp(buf, KB_HYPHEN))
-+		out[2] = 0x4e;
-+	else if (!strcmp(buf, KB_EQUALS))
-+		out[2] = 0x55;
-+	else if (!strcmp(buf, KB_BACKSPACE))
-+		out[2] = 0x66;
++	STR_TO_CODE_ELIF(2, 0x0e, KB_BACKTICK)
++	STR_TO_CODE_ELIF(2, 0x16, KB_1)
++	STR_TO_CODE_ELIF(2, 0x1e, KB_2)
++	STR_TO_CODE_ELIF(2, 0x26, KB_3)
++	STR_TO_CODE_ELIF(2, 0x25, KB_4)
++	STR_TO_CODE_ELIF(2, 0x2e, KB_5)
++	STR_TO_CODE_ELIF(2, 0x36, KB_6)
++	STR_TO_CODE_ELIF(2, 0x3d, KB_7)
++	STR_TO_CODE_ELIF(2, 0x3e, KB_8)
++	STR_TO_CODE_ELIF(2, 0x46, KB_9)
++	STR_TO_CODE_ELIF(2, 0x45, KB_0)
++	STR_TO_CODE_ELIF(2, 0x4e, KB_HYPHEN)
++	STR_TO_CODE_ELIF(2, 0x55, KB_EQUALS)
++	STR_TO_CODE_ELIF(2, 0x66, KB_BACKSPACE)
 +
-+	else if (!strcmp(buf, KB_TAB))
-+		out[2] = 0x0d;
-+	else if (!strcmp(buf, KB_Q))
-+		out[2] = 0x15;
-+	else if (!strcmp(buf, KB_W))
-+		out[2] = 0x1d;
-+	else if (!strcmp(buf, KB_E))
-+		out[2] = 0x24;
-+	else if (!strcmp(buf, KB_R))
-+		out[2] = 0x2d;
-+	else if (!strcmp(buf, KB_T))
-+		out[2] = 0x2d;
-+	else if (!strcmp(buf, KB_Y))
-+		out[2] = 0x35;
-+	else if (!strcmp(buf, KB_U))
-+		out[2] = 0x3c;
-+	else if (!strcmp(buf, KB_I))
-+		out[2] = 0x43;
-+	else if (!strcmp(buf, KB_O))
-+		out[2] = 0x44;
-+	else if (!strcmp(buf, KB_P))
-+		out[2] = 0x4d;
-+	else if (!strcmp(buf, KB_LBRACKET))
-+		out[2] = 0x54;
-+	else if (!strcmp(buf, KB_RBRACKET))
-+		out[2] = 0x5b;
-+	else if (!strcmp(buf, KB_BACKSLASH))
-+		out[2] = 0x5d;
++	STR_TO_CODE_ELIF(2, 0x0d, KB_TAB)
++	STR_TO_CODE_ELIF(2, 0x15, KB_Q)
++	STR_TO_CODE_ELIF(2, 0x1d, KB_W)
++	STR_TO_CODE_ELIF(2, 0x24, KB_E)
++	STR_TO_CODE_ELIF(2, 0x2d, KB_R)
++	STR_TO_CODE_ELIF(2, 0x2d, KB_T)
++	STR_TO_CODE_ELIF(2, 0x35, KB_Y)
++	STR_TO_CODE_ELIF(2, 0x3c, KB_U)
++	STR_TO_CODE_ELIF(2, 0x43, KB_I)
++	STR_TO_CODE_ELIF(2, 0x44, KB_O)
++	STR_TO_CODE_ELIF(2, 0x4d, KB_P)
++	STR_TO_CODE_ELIF(2, 0x54, KB_LBRACKET)
++	STR_TO_CODE_ELIF(2, 0x5b, KB_RBRACKET)
++	STR_TO_CODE_ELIF(2, 0x5d, KB_BACKSLASH)
 +
-+	else if (!strcmp(buf, KB_CAPS))
-+		out[2] = 0x58;
-+	else if (!strcmp(buf, KB_A))
-+		out[2] = 0x1c;
-+	else if (!strcmp(buf, KB_S))
-+		out[2] = 0x1b;
-+	else if (!strcmp(buf, KB_D))
-+		out[2] = 0x23;
-+	else if (!strcmp(buf, KB_F))
-+		out[2] = 0x2b;
-+	else if (!strcmp(buf, KB_G))
-+		out[2] = 0x34;
-+	else if (!strcmp(buf, KB_H))
-+		out[2] = 0x33;
-+	else if (!strcmp(buf, KB_J))
-+		out[2] = 0x3b;
-+	else if (!strcmp(buf, KB_K))
-+		out[2] = 0x42;
-+	else if (!strcmp(buf, KB_L))
-+		out[2] = 0x4b;
-+	else if (!strcmp(buf, KB_SEMI))
-+		out[2] = 0x4c;
-+	else if (!strcmp(buf, KB_QUOTE))
-+		out[2] = 0x52;
-+	else if (!strcmp(buf, KB_RET))
-+		out[2] = 0x5a;
++	STR_TO_CODE_ELIF(2, 0x58, KB_CAPS)
++	STR_TO_CODE_ELIF(2, 0x1c, KB_A)
++	STR_TO_CODE_ELIF(2, 0x1b, KB_S)
++	STR_TO_CODE_ELIF(2, 0x23, KB_D)
++	STR_TO_CODE_ELIF(2, 0x2b, KB_F)
++	STR_TO_CODE_ELIF(2, 0x34, KB_G)
++	STR_TO_CODE_ELIF(2, 0x33, KB_H)
++	STR_TO_CODE_ELIF(2, 0x3b, KB_J)
++	STR_TO_CODE_ELIF(2, 0x42, KB_K)
++	STR_TO_CODE_ELIF(2, 0x4b, KB_L)
++	STR_TO_CODE_ELIF(2, 0x4c, KB_SEMI)
++	STR_TO_CODE_ELIF(2, 0x52, KB_QUOTE)
++	STR_TO_CODE_ELIF(2, 0x5a, KB_RET)
 +
-+	else if (!strcmp(buf, KB_LSHIFT))
-+		out[2] = 0x88;
-+	else if (!strcmp(buf, KB_Z))
-+		out[2] = 0x1a;
-+	else if (!strcmp(buf, KB_X))
-+		out[2] = 0x22;
-+	else if (!strcmp(buf, KB_C))
-+		out[2] = 0x21;
-+	else if (!strcmp(buf, KB_V))
-+		out[2] = 0x2a;
-+	else if (!strcmp(buf, KB_B))
-+		out[2] = 0x32;
-+	else if (!strcmp(buf, KB_N))
-+		out[2] = 0x31;
-+	else if (!strcmp(buf, KB_M))
-+		out[2] = 0x3a;
-+	else if (!strcmp(buf, KB_COMA))
-+		out[2] = 0x41;
-+	else if (!strcmp(buf, KB_PERIOD))
-+		out[2] = 0x49;
-+	else if (!strcmp(buf, KB_FWDSLASH))
-+		out[2] = 0x4a;
-+	else if (!strcmp(buf, KB_RSHIFT))
-+		out[2] = 0x89;
++	STR_TO_CODE_ELIF(2, 0x88, KB_LSHIFT)
++	STR_TO_CODE_ELIF(2, 0x1a, KB_Z)
++	STR_TO_CODE_ELIF(2, 0x22, KB_X)
++	STR_TO_CODE_ELIF(2, 0x21, KB_C)
++	STR_TO_CODE_ELIF(2, 0x2a, KB_V)
++	STR_TO_CODE_ELIF(2, 0x32, KB_B)
++	STR_TO_CODE_ELIF(2, 0x31, KB_N)
++	STR_TO_CODE_ELIF(2, 0x3a, KB_M)
++	STR_TO_CODE_ELIF(2, 0x41, KB_COMA)
++	STR_TO_CODE_ELIF(2, 0x49, KB_PERIOD)
++	STR_TO_CODE_ELIF(2, 0x4a, KB_FWDSLASH)
++	STR_TO_CODE_ELIF(2, 0x89, KB_RSHIFT)
 +
-+	else if (!strcmp(buf, KB_LCTL))
-+		out[2] = 0x8c;
-+	else if (!strcmp(buf, KB_META))
-+		out[2] = 0x82;
-+	else if (!strcmp(buf, KB_LALT))
-+		out[2] = 0xba;
-+	else if (!strcmp(buf, KB_SPACE))
-+		out[2] = 0x29;
-+	else if (!strcmp(buf, KB_RALT))
-+		out[2] = 0x8b;
-+	else if (!strcmp(buf, KB_MENU))
-+		out[2] = 0x84;
-+	else if (!strcmp(buf, KB_RCTL))
-+		out[2] = 0x8d;
++	STR_TO_CODE_ELIF(2, 0x8c, KB_LCTL)
++	STR_TO_CODE_ELIF(2, 0x82, KB_META)
++	STR_TO_CODE_ELIF(2, 0xba, KB_LALT)
++	STR_TO_CODE_ELIF(2, 0x29, KB_SPACE)
++	STR_TO_CODE_ELIF(2, 0x8b, KB_RALT)
++	STR_TO_CODE_ELIF(2, 0x84, KB_MENU)
++	STR_TO_CODE_ELIF(2, 0x8d, KB_RCTL)
 +
-+	else if (!strcmp(buf, KB_PRNTSCN))
-+		out[2] = 0xc3;
-+	else if (!strcmp(buf, KB_SCRLCK))
-+		out[2] = 0x7e;
-+	else if (!strcmp(buf, KB_PAUSE))
-+		out[2] = 0x91;
-+	else if (!strcmp(buf, KB_INS))
-+		out[2] = 0xc2;
-+	else if (!strcmp(buf, KB_HOME))
-+		out[2] = 0x94;
-+	else if (!strcmp(buf, KB_PGUP))
-+		out[2] = 0x96;
-+	else if (!strcmp(buf, KB_DEL))
-+		out[2] = 0xc0;
-+	else if (!strcmp(buf, KB_END))
-+		out[2] = 0x95;
-+	else if (!strcmp(buf, KB_PGDWN))
-+		out[2] = 0x97;
++	STR_TO_CODE_ELIF(2, 0xc3, KB_PRNTSCN)
++	STR_TO_CODE_ELIF(2, 0x7e, KB_SCRLCK)
++	STR_TO_CODE_ELIF(2, 0x91, KB_PAUSE)
++	STR_TO_CODE_ELIF(2, 0xc2, KB_INS)
++	STR_TO_CODE_ELIF(2, 0x94, KB_HOME)
++	STR_TO_CODE_ELIF(2, 0x96, KB_PGUP)
++	STR_TO_CODE_ELIF(2, 0xc0, KB_DEL)
++	STR_TO_CODE_ELIF(2, 0x95, KB_END)
++	STR_TO_CODE_ELIF(2, 0x97, KB_PGDWN)
 +
-+	else if (!strcmp(buf, KB_UP_ARROW))
-+		out[2] = 0x99;
-+	else if (!strcmp(buf, KB_DOWN_ARROW))
-+		out[2] = 0x98;
-+	else if (!strcmp(buf, KB_LEFT_ARROW))
-+		out[2] = 0x91;
-+	else if (!strcmp(buf, KB_RIGHT_ARROW))
-+		out[2] = 0x9b;
++	STR_TO_CODE_ELIF(2, 0x99, KB_UP_ARROW)
++	STR_TO_CODE_ELIF(2, 0x98, KB_DOWN_ARROW)
++	STR_TO_CODE_ELIF(2, 0x91, KB_LEFT_ARROW)
++	STR_TO_CODE_ELIF(2, 0x9b, KB_RIGHT_ARROW)
 +
-+	else if (!strcmp(buf, NUMPAD_LCK))
-+		out[2] = 0x77;
-+	else if (!strcmp(buf, NUMPAD_FWDSLASH))
-+		out[2] = 0x90;
-+	else if (!strcmp(buf, NUMPAD_STAR))
-+		out[2] = 0x7c;
-+	else if (!strcmp(buf, NUMPAD_HYPHEN))
-+		out[2] = 0x7b;
-+	else if (!strcmp(buf, NUMPAD_0))
-+		out[2] = 0x70;
-+	else if (!strcmp(buf, NUMPAD_1))
-+		out[2] = 0x69;
-+	else if (!strcmp(buf, NUMPAD_2))
-+		out[2] = 0x72;
-+	else if (!strcmp(buf, NUMPAD_3))
-+		out[2] = 0x7a;
-+	else if (!strcmp(buf, NUMPAD_4))
-+		out[2] = 0x6b;
-+	else if (!strcmp(buf, NUMPAD_5))
-+		out[2] = 0x73;
-+	else if (!strcmp(buf, NUMPAD_6))
-+		out[2] = 0x74;
-+	else if (!strcmp(buf, NUMPAD_7))
-+		out[2] = 0x6c;
-+	else if (!strcmp(buf, NUMPAD_8))
-+		out[2] = 0x75;
-+	else if (!strcmp(buf, NUMPAD_9))
-+		out[2] = 0x7d;
-+	else if (!strcmp(buf, NUMPAD_PLUS))
-+		out[2] = 0x79;
-+	else if (!strcmp(buf, NUMPAD_ENTER))
-+		out[2] = 0x81;
-+	else if (!strcmp(buf, NUMPAD_PERIOD))
-+		out[2] = 0x71;
++	STR_TO_CODE_ELIF(2, 0x77, NUMPAD_LCK)
++	STR_TO_CODE_ELIF(2, 0x90, NUMPAD_FWDSLASH)
++	STR_TO_CODE_ELIF(2, 0x7c, NUMPAD_STAR)
++	STR_TO_CODE_ELIF(2, 0x7b, NUMPAD_HYPHEN)
++	STR_TO_CODE_ELIF(2, 0x70, NUMPAD_0)
++	STR_TO_CODE_ELIF(2, 0x69, NUMPAD_1)
++	STR_TO_CODE_ELIF(2, 0x72, NUMPAD_2)
++	STR_TO_CODE_ELIF(2, 0x7a, NUMPAD_3)
++	STR_TO_CODE_ELIF(2, 0x6b, NUMPAD_4)
++	STR_TO_CODE_ELIF(2, 0x73, NUMPAD_5)
++	STR_TO_CODE_ELIF(2, 0x74, NUMPAD_6)
++	STR_TO_CODE_ELIF(2, 0x6c, NUMPAD_7)
++	STR_TO_CODE_ELIF(2, 0x75, NUMPAD_8)
++	STR_TO_CODE_ELIF(2, 0x7d, NUMPAD_9)
++	STR_TO_CODE_ELIF(2, 0x79, NUMPAD_PLUS)
++	STR_TO_CODE_ELIF(2, 0x81, NUMPAD_ENTER)
++	STR_TO_CODE_ELIF(2, 0x71, NUMPAD_PERIOD)
 +	if (out[2])
 +		goto success;
 +
 +	out[0] = 0x03;
-+	if (!strcmp(buf, RAT_LCLICK))
-+		out[4] = 0x01;
-+	else if (!strcmp(buf, RAT_RCLICK))
-+		out[4] = 0x02;
-+	else if (!strcmp(buf, RAT_MCLICK))
-+		out[4] = 0x03;
-+	else if (!strcmp(buf, RAT_WHEEL_UP))
-+		out[4] = 0x04;
-+	else if (!strcmp(buf, RAT_WHEEL_DOWN))
-+		out[4] = 0x05;
++	STR_TO_CODE_IF(4, 0x01, RAT_LCLICK)
++	STR_TO_CODE_ELIF(4, 0x02, RAT_RCLICK)
++	STR_TO_CODE_ELIF(4, 0x03, RAT_MCLICK)
++	STR_TO_CODE_ELIF(4, 0x04, RAT_WHEEL_UP)
++	STR_TO_CODE_ELIF(4, 0x05, RAT_WHEEL_DOWN)
 +	if (out[4] != 0)
 +		goto success;
 +
 +	out[0] = 0x05;
-+	if (!strcmp(buf, MEDIA_SCREENSHOT))
-+		out[3] = 0x16;
-+	else if (!strcmp(buf, MEDIA_SHOW_KEYBOARD))
-+		out[3] = 0x19;
-+	else if (!strcmp(buf, MEDIA_SHOW_DESKTOP))
-+		out[3] = 0x1c;
-+	else if (!strcmp(buf, MEDIA_START_RECORDING))
-+		out[3] = 0x1e;
-+	else if (!strcmp(buf, MEDIA_MIC_OFF))
-+		out[3] = 0x01;
-+	else if (!strcmp(buf, MEDIA_VOL_DOWN))
-+		out[3] = 0x02;
-+	else if (!strcmp(buf, MEDIA_VOL_UP))
-+		out[3] = 0x03;
++	STR_TO_CODE_IF(3, 0x16, MEDIA_SCREENSHOT)
++	STR_TO_CODE_ELIF(3, 0x19, MEDIA_SHOW_KEYBOARD)
++	STR_TO_CODE_ELIF(3, 0x1c, MEDIA_SHOW_DESKTOP)
++	STR_TO_CODE_ELIF(3, 0x1e, MEDIA_START_RECORDING)
++	STR_TO_CODE_ELIF(3, 0x01, MEDIA_MIC_OFF)
++	STR_TO_CODE_ELIF(3, 0x02, MEDIA_VOL_DOWN)
++	STR_TO_CODE_ELIF(3, 0x03, MEDIA_VOL_UP)
 +	if (out[3])
 +		goto success;
 +
@@ -562,7 +544,7 @@ index 000000000000..8dc7df3c5cd5
 +}
 +
 +#define CODE_TO_STR_IF(_idx, _code, _label) \
-+	if (btn_block[_idx] == _code) \
++	if (btn_block[_idx] == _code)       \
 +		return _label;
 +
 +const static char *__btn_map_to_string(struct device *raw_dev, enum btn_pair pair,
@@ -614,223 +596,121 @@ index 000000000000..8dc7df3c5cd5
 +		CODE_TO_STR_IF(2, 0x10, KB_F14)
 +		CODE_TO_STR_IF(2, 0x18, KB_F15)
 +
-+		if (btn_block[2] == 0x0e)
-+			return KB_BACKTICK;
-+		if (btn_block[2] == 0x16)
-+			return KB_1;
-+		if (btn_block[2] == 0x1e)
-+			return KB_2;
-+		if (btn_block[2] == 0x26)
-+			return KB_3;
-+		if (btn_block[2] == 0x25)
-+			return KB_4;
-+		if (btn_block[2] == 0x2e)
-+			return KB_5;
-+		if (btn_block[2] == 0x36)
-+			return KB_6;
-+		if (btn_block[2] == 0x3d)
-+			return KB_7;
-+		if (btn_block[2] == 0x3e)
-+			return KB_8;
-+		if (btn_block[2] == 0x46)
-+			return KB_9;
-+		if (btn_block[2] == 0x45)
-+			return KB_0;
-+		if (btn_block[2] == 0x4e)
-+			return KB_HYPHEN;
-+		if (btn_block[2] == 0x55)
-+			return KB_EQUALS;
-+		if (btn_block[2] == 0x66)
-+			return KB_BACKSPACE;
++		CODE_TO_STR_IF(2, 0x0e, KB_BACKTICK)
++		CODE_TO_STR_IF(2, 0x16, KB_1)
++		CODE_TO_STR_IF(2, 0x1e, KB_2)
++		CODE_TO_STR_IF(2, 0x26, KB_3)
++		CODE_TO_STR_IF(2, 0x25, KB_4)
++		CODE_TO_STR_IF(2, 0x2e, KB_5)
++		CODE_TO_STR_IF(2, 0x36, KB_6)
++		CODE_TO_STR_IF(2, 0x3d, KB_7)
++		CODE_TO_STR_IF(2, 0x3e, KB_8)
++		CODE_TO_STR_IF(2, 0x46, KB_9)
++		CODE_TO_STR_IF(2, 0x45, KB_0)
++		CODE_TO_STR_IF(2, 0x4e, KB_HYPHEN)
++		CODE_TO_STR_IF(2, 0x55, KB_EQUALS)
++		CODE_TO_STR_IF(2, 0x66, KB_BACKSPACE)
 +
-+		if (btn_block[2] == 0x0d)
-+			return KB_TAB;
-+		if (btn_block[2] == 0x15)
-+			return KB_Q;
-+		if (btn_block[2] == 0x1d)
-+			return KB_W;
-+		if (btn_block[2] == 0x24)
-+			return KB_E;
-+		if (btn_block[2] == 0x2d)
-+			return KB_R;
-+		if (btn_block[2] == 0x2d)
-+			return KB_T;
-+		if (btn_block[2] == 0x35)
-+			return KB_Y;
-+		if (btn_block[2] == 0x3c)
-+			return KB_U;
-+		if (btn_block[2] == 0x43)
-+			return KB_I;
-+		if (btn_block[2] == 0x44)
-+			return KB_O;
-+		if (btn_block[2] == 0x4d)
-+			return KB_P;
-+		if (btn_block[2] == 0x54)
-+			return KB_LBRACKET;
-+		if (btn_block[2] == 0x5b)
-+			return KB_RBRACKET;
-+		if (btn_block[2] == 0x5d)
-+			return KB_BACKSLASH;
++		CODE_TO_STR_IF(2, 0x0d, KB_TAB)
++		CODE_TO_STR_IF(2, 0x15, KB_Q)
++		CODE_TO_STR_IF(2, 0x1d, KB_W)
++		CODE_TO_STR_IF(2, 0x24, KB_E)
++		CODE_TO_STR_IF(2, 0x2d, KB_R)
++		CODE_TO_STR_IF(2, 0x2d, KB_T)
++		CODE_TO_STR_IF(2, 0x35, KB_Y)
++		CODE_TO_STR_IF(2, 0x3c, KB_U)
++		CODE_TO_STR_IF(2, 0x43, KB_I)
++		CODE_TO_STR_IF(2, 0x44, KB_O)
++		CODE_TO_STR_IF(2, 0x4d, KB_P)
++		CODE_TO_STR_IF(2, 0x54, KB_LBRACKET)
++		CODE_TO_STR_IF(2, 0x5b, KB_RBRACKET)
++		CODE_TO_STR_IF(2, 0x5d, KB_BACKSLASH)
 +
-+		if (btn_block[2] == 0x58)
-+			return KB_CAPS;
-+		if (btn_block[2] == 0x1c)
-+			return KB_A;
-+		if (btn_block[2] == 0x1b)
-+			return KB_S;
-+		if (btn_block[2] == 0x23)
-+			return KB_D;
-+		if (btn_block[2] == 0x2b)
-+			return KB_F;
-+		if (btn_block[2] == 0x34)
-+			return KB_G;
-+		if (btn_block[2] == 0x33)
-+			return KB_H;
-+		if (btn_block[2] == 0x3b)
-+			return KB_J;
-+		if (btn_block[2] == 0x42)
-+			return KB_K;
-+		if (btn_block[2] == 0x4b)
-+			return KB_L;
-+		if (btn_block[2] == 0x4c)
-+			return KB_SEMI;
-+		if (btn_block[2] == 0x52)
-+			return KB_QUOTE;
-+		if (btn_block[2] == 0x5a)
-+			return KB_RET;
++		CODE_TO_STR_IF(2, 0x58, KB_CAPS)
++		CODE_TO_STR_IF(2, 0x1c, KB_A)
++		CODE_TO_STR_IF(2, 0x1b, KB_S)
++		CODE_TO_STR_IF(2, 0x23, KB_D)
++		CODE_TO_STR_IF(2, 0x2b, KB_F)
++		CODE_TO_STR_IF(2, 0x34, KB_G)
++		CODE_TO_STR_IF(2, 0x33, KB_H)
++		CODE_TO_STR_IF(2, 0x3b, KB_J)
++		CODE_TO_STR_IF(2, 0x42, KB_K)
++		CODE_TO_STR_IF(2, 0x4b, KB_L)
++		CODE_TO_STR_IF(2, 0x4c, KB_SEMI)
++		CODE_TO_STR_IF(2, 0x52, KB_QUOTE)
++		CODE_TO_STR_IF(2, 0x5a, KB_RET)
 +
-+		if (btn_block[2] == 0x88)
-+			return KB_LSHIFT;
-+		if (btn_block[2] == 0x1a)
-+			return KB_Z;
-+		if (btn_block[2] == 0x22)
-+			return KB_X;
-+		if (btn_block[2] == 0x21)
-+			return KB_C;
-+		if (btn_block[2] == 0x2a)
-+			return KB_V;
-+		if (btn_block[2] == 0x32)
-+			return KB_B;
-+		if (btn_block[2] == 0x31)
-+			return KB_N;
-+		if (btn_block[2] == 0x3a)
-+			return KB_M;
-+		if (btn_block[2] == 0x41)
-+			return KB_COMA;
-+		if (btn_block[2] == 0x49)
-+			return KB_PERIOD;
-+		if (btn_block[2] == 0x4a)
-+			return KB_FWDSLASH;
-+		if (btn_block[2] == 0x89)
-+			return KB_RSHIFT;
++		CODE_TO_STR_IF(2, 0x88, KB_LSHIFT)
++		CODE_TO_STR_IF(2, 0x1a, KB_Z)
++		CODE_TO_STR_IF(2, 0x22, KB_X)
++		CODE_TO_STR_IF(2, 0x21, KB_C)
++		CODE_TO_STR_IF(2, 0x2a, KB_V)
++		CODE_TO_STR_IF(2, 0x32, KB_B)
++		CODE_TO_STR_IF(2, 0x31, KB_N)
++		CODE_TO_STR_IF(2, 0x3a, KB_M)
++		CODE_TO_STR_IF(2, 0x41, KB_COMA)
++		CODE_TO_STR_IF(2, 0x49, KB_PERIOD)
++		CODE_TO_STR_IF(2, 0x4a, KB_FWDSLASH)
++		CODE_TO_STR_IF(2, 0x89, KB_RSHIFT)
 +
-+		if (btn_block[2] == 0x8c)
-+			return KB_LCTL;
-+		if (btn_block[2] == 0x82)
-+			return KB_META;
-+		if (btn_block[2] == 0xba)
-+			return KB_LALT;
-+		if (btn_block[2] == 0x29)
-+			return KB_SPACE;
-+		if (btn_block[2] == 0x8b)
-+			return KB_RALT;
-+		if (btn_block[2] == 0x84)
-+			return KB_MENU;
-+		if (btn_block[2] == 0x8d)
-+			return KB_RCTL;
++		CODE_TO_STR_IF(2, 0x8c, KB_LCTL)
++		CODE_TO_STR_IF(2, 0x82, KB_META)
++		CODE_TO_STR_IF(2, 0xba, KB_LALT)
++		CODE_TO_STR_IF(2, 0x29, KB_SPACE)
++		CODE_TO_STR_IF(2, 0x8b, KB_RALT)
++		CODE_TO_STR_IF(2, 0x84, KB_MENU)
++		CODE_TO_STR_IF(2, 0x8d, KB_RCTL)
 +
-+		if (btn_block[2] == 0xc3)
-+			return KB_PRNTSCN;
-+		if (btn_block[2] == 0x7e)
-+			return KB_SCRLCK;
-+		if (btn_block[2] == 0x91)
-+			return KB_PAUSE;
-+		if (btn_block[2] == 0xc2)
-+			return KB_INS;
-+		if (btn_block[2] == 0x94)
-+			return KB_HOME;
-+		if (btn_block[2] == 0x96)
-+			return KB_PGUP;
-+		if (btn_block[2] == 0xc0)
-+			return KB_DEL;
-+		if (btn_block[2] == 0x95)
-+			return KB_END;
-+		if (btn_block[2] == 0x97)
-+			return KB_PGDWN;
++		CODE_TO_STR_IF(2, 0xc3, KB_PRNTSCN)
++		CODE_TO_STR_IF(2, 0x7e, KB_SCRLCK)
++		CODE_TO_STR_IF(2, 0x91, KB_PAUSE)
++		CODE_TO_STR_IF(2, 0xc2, KB_INS)
++		CODE_TO_STR_IF(2, 0x94, KB_HOME)
++		CODE_TO_STR_IF(2, 0x96, KB_PGUP)
++		CODE_TO_STR_IF(2, 0xc0, KB_DEL)
++		CODE_TO_STR_IF(2, 0x95, KB_END)
++		CODE_TO_STR_IF(2, 0x97, KB_PGDWN)
 +
-+		if (btn_block[2] == 0x99)
-+			return KB_UP_ARROW;
-+		if (btn_block[2] == 0x98)
-+			return KB_DOWN_ARROW;
-+		if (btn_block[2] == 0x91)
-+			return KB_LEFT_ARROW;
-+		if (btn_block[2] == 0x9b)
-+			return KB_RIGHT_ARROW;
++		CODE_TO_STR_IF(2, 0x99, KB_UP_ARROW)
++		CODE_TO_STR_IF(2, 0x98, KB_DOWN_ARROW)
++		CODE_TO_STR_IF(2, 0x91, KB_LEFT_ARROW)
++		CODE_TO_STR_IF(2, 0x9b, KB_RIGHT_ARROW)
 +
-+		if (btn_block[2] == 0x77)
-+			return NUMPAD_LCK;
-+		if (btn_block[2] == 0x90)
-+			return NUMPAD_FWDSLASH;
-+		if (btn_block[2] == 0x7c)
-+			return NUMPAD_STAR;
-+		if (btn_block[2] == 0x7b)
-+			return NUMPAD_HYPHEN;
-+		if (btn_block[2] == 0x70)
-+			return NUMPAD_0;
-+		if (btn_block[2] == 0x69)
-+			return NUMPAD_1;
-+		if (btn_block[2] == 0x72)
-+			return NUMPAD_2;
-+		if (btn_block[2] == 0x7a)
-+			return NUMPAD_3;
-+		if (btn_block[2] == 0x6b)
-+			return NUMPAD_4;
-+		if (btn_block[2] == 0x73)
-+			return NUMPAD_5;
-+		if (btn_block[2] == 0x74)
-+			return NUMPAD_6;
-+		if (btn_block[2] == 0x6c)
-+			return NUMPAD_7;
-+		if (btn_block[2] == 0x75)
-+			return NUMPAD_8;
-+		if (btn_block[2] == 0x7d)
-+			return NUMPAD_9;
-+		if (btn_block[2] == 0x79)
-+			return NUMPAD_PLUS;
-+		if (btn_block[2] == 0x81)
-+			return NUMPAD_ENTER;
-+		if (btn_block[2] == 0x71)
-+			return NUMPAD_PERIOD;
++		CODE_TO_STR_IF(2, 0x77, NUMPAD_LCK)
++		CODE_TO_STR_IF(2, 0x90, NUMPAD_FWDSLASH)
++		CODE_TO_STR_IF(2, 0x7c, NUMPAD_STAR)
++		CODE_TO_STR_IF(2, 0x7b, NUMPAD_HYPHEN)
++		CODE_TO_STR_IF(2, 0x70, NUMPAD_0)
++		CODE_TO_STR_IF(2, 0x69, NUMPAD_1)
++		CODE_TO_STR_IF(2, 0x72, NUMPAD_2)
++		CODE_TO_STR_IF(2, 0x7a, NUMPAD_3)
++		CODE_TO_STR_IF(2, 0x6b, NUMPAD_4)
++		CODE_TO_STR_IF(2, 0x73, NUMPAD_5)
++		CODE_TO_STR_IF(2, 0x74, NUMPAD_6)
++		CODE_TO_STR_IF(2, 0x6c, NUMPAD_7)
++		CODE_TO_STR_IF(2, 0x75, NUMPAD_8)
++		CODE_TO_STR_IF(2, 0x7d, NUMPAD_9)
++		CODE_TO_STR_IF(2, 0x79, NUMPAD_PLUS)
++		CODE_TO_STR_IF(2, 0x81, NUMPAD_ENTER)
++		CODE_TO_STR_IF(2, 0x71, NUMPAD_PERIOD)
 +	}
 +
 +	if (btn_block[0] == 0x03) {
-+		if (btn_block[4] == 0x01)
-+			return RAT_LCLICK;
-+		if (btn_block[4] == 0x02)
-+			return RAT_RCLICK;
-+		if (btn_block[4] == 0x03)
-+			return RAT_MCLICK;
-+		if (btn_block[4] == 0x04)
-+			return RAT_WHEEL_UP;
-+		if (btn_block[4] == 0x05)
-+			return RAT_WHEEL_DOWN;
++		CODE_TO_STR_IF(4, 0x01, RAT_LCLICK)
++		CODE_TO_STR_IF(4, 0x02, RAT_RCLICK)
++		CODE_TO_STR_IF(4, 0x03, RAT_MCLICK)
++		CODE_TO_STR_IF(4, 0x04, RAT_WHEEL_UP)
++		CODE_TO_STR_IF(4, 0x05, RAT_WHEEL_DOWN)
 +	}
 +
 +	if (btn_block[0] == 0x05) {
-+		if (btn_block[3] == 0x16)
-+			return MEDIA_SCREENSHOT;
-+		if (btn_block[3] == 0x19)
-+			return MEDIA_SHOW_KEYBOARD;
-+		if (btn_block[3] == 0x1c)
-+			return MEDIA_SHOW_DESKTOP;
-+		if (btn_block[3] == 0x1e)
-+			return MEDIA_START_RECORDING;
-+		if (btn_block[3] == 0x01)
-+			return MEDIA_MIC_OFF;
-+		if (btn_block[3] == 0x02)
-+			return MEDIA_VOL_DOWN;
-+		if (btn_block[3] == 0x03)
-+			return MEDIA_VOL_UP;
++		CODE_TO_STR_IF(3, 0x16, MEDIA_SCREENSHOT)
++		CODE_TO_STR_IF(3, 0x19, MEDIA_SHOW_KEYBOARD)
++		CODE_TO_STR_IF(3, 0x1c, MEDIA_SHOW_DESKTOP)
++		CODE_TO_STR_IF(3, 0x1e, MEDIA_START_RECORDING)
++		CODE_TO_STR_IF(3, 0x01, MEDIA_MIC_OFF)
++		CODE_TO_STR_IF(3, 0x02, MEDIA_VOL_DOWN)
++		CODE_TO_STR_IF(3, 0x03, MEDIA_VOL_UP)
 +	}
 +
 +	return "";
@@ -926,64 +806,10 @@ index 000000000000..8dc7df3c5cd5
 +	return ret;
 +}
 +
-+static int __gamepad_set_mapping_all(struct device *raw_dev)
-+{
-+	struct asus_rog_ally *rog_ally = __rog_ally_data(raw_dev);
-+	struct hid_device *hdev = to_hid_device(raw_dev);
-+	u8 *hidbuf;
-+	int ret = 0;
-+
-+	ret = __gamepad_set_mapping(&hdev->dev, btn_pair_dpad_u_d);
-+	if (ret < 0)
-+		return ret;
-+	ret = __gamepad_set_mapping(&hdev->dev, btn_pair_dpad_l_r);
-+	if (ret < 0)
-+		return ret;
-+	ret = __gamepad_set_mapping(&hdev->dev, btn_pair_ls_rs);
-+	if (ret < 0)
-+		return ret;
-+	ret = __gamepad_set_mapping(&hdev->dev, btn_pair_lb_rb);
-+	if (ret < 0)
-+		return ret;
-+	ret = __gamepad_set_mapping(&hdev->dev, btn_pair_a_b);
-+	if (ret < 0)
-+		return ret;
-+	ret = __gamepad_set_mapping(&hdev->dev, btn_pair_x_y);
-+	if (ret < 0)
-+		return ret;
-+	ret = __gamepad_set_mapping(&hdev->dev, btn_pair_view_menu);
-+	if (ret < 0)
-+		return ret;
-+	ret = __gamepad_set_mapping(&hdev->dev, btn_pair_m1_m2);
-+	if (ret < 0)
-+		return ret;
-+	__gamepad_set_mapping(&hdev->dev, btn_pair_lt_rt);
-+	if (ret < 0)
-+		return ret;
-+
-+	ret = __gamepad_check_ready(hdev);
-+	if (ret < 0)
-+		return ret;
-+
-+	/* set turbo */
-+	hidbuf = kzalloc(FEATURE_ROG_ALLY_REPORT_SIZE, GFP_KERNEL);
-+	if (!hidbuf)
-+		return -ENOMEM;
-+	hidbuf[0] = FEATURE_KBD_REPORT_ID;
-+	hidbuf[1] = 0xD1;
-+	hidbuf[2] = xpad_cmd_set_turbo;
-+	hidbuf[3] = 0x20; // length
-+	memcpy(&hidbuf[4], rog_ally->turbo_btns, TURBO_BLOCK_LEN);
-+	ret = asus_kbd_set_report(hdev, hidbuf, FEATURE_ROG_ALLY_REPORT_SIZE);
-+
-+	kfree(hidbuf);
-+	return ret;
-+}
-+
 +static ssize_t btn_mapping_apply_store(struct device *raw_dev, struct device_attribute *attr,
 +				       const char *buf, size_t count)
 +{
-+	int ret = __gamepad_set_mapping_all(raw_dev);
++	int ret = __gamepad_write_all_to_mcu(raw_dev);
 +	if (ret < 0)
 +		return ret;
 +	return count;
@@ -993,16 +819,17 @@ index 000000000000..8dc7df3c5cd5
 +/********** BUTTON TURBO *************************************************************************/
 +static int __gamepad_turbo_index(enum btn_pair pair, int side)
 +{
-+	return (pair -1) * (2 * TURBO_BLOCK_STEP) + (side * TURBO_BLOCK_STEP);
++	return (pair - 1) * (2 * TURBO_BLOCK_STEP) + (side * TURBO_BLOCK_STEP);
 +};
 +
 +static int __gamepad_turbo_show(struct device *raw_dev, enum btn_pair pair, int side)
 +{
 +	struct asus_rog_ally *rog_ally = __rog_ally_data(raw_dev);
-+	return rog_ally->turbo_btns[__gamepad_turbo_index(pair, side)];
++	return rog_ally->turbo_btns[rog_ally->mode][__gamepad_turbo_index(pair, side)];
 +};
 +
-+static int __gamepad_turbo_store(struct device *raw_dev, const char *buf, enum btn_pair pair, int side)
++static int __gamepad_turbo_store(struct device *raw_dev, const char *buf, enum btn_pair pair,
++				 int side)
 +{
 +	struct asus_rog_ally *rog_ally = __rog_ally_data(raw_dev);
 +	int ret, val;
@@ -1012,8 +839,8 @@ index 000000000000..8dc7df3c5cd5
 +		return ret;
 +	if (val < 0 || val > 16)
 +		return -EINVAL;
-+	
-+	rog_ally->turbo_btns[__gamepad_turbo_index(pair, side)] = val;
++
++	rog_ally->turbo_btns[rog_ally->mode][__gamepad_turbo_index(pair, side)] = val;
 +
 +	return 0;
 +};
@@ -1083,11 +910,9 @@ index 000000000000..8dc7df3c5cd5
 +	return count;
 +}
 +
-+ALLY_DEVICE_ATTR_WO(btn_mapping_reset, reset);
++ALLY_DEVICE_ATTR_WO(btn_mapping_reset, reset_btn_mapping);
 +
 +/********** GAMEPAD MODE *************************************************************************/
-+// TODO: general purpose request function which checks the device is ready before setting
-+/* The gamepad mode also needs to be set on boot/mod-load and shutdown */
 +static ssize_t __gamepad_set_mode(struct device *raw_dev, int val)
 +{
 +	struct hid_device *hdev = to_hid_device(raw_dev);
@@ -1113,6 +938,10 @@ index 000000000000..8dc7df3c5cd5
 +		goto report_fail;
 +
 +	ret = asus_kbd_set_report(hdev, hidbuf, FEATURE_ROG_ALLY_REPORT_SIZE);
++	if (ret < 0)
++		goto report_fail;
++
++	ret = __gamepad_write_all_to_mcu(raw_dev);
 +	if (ret < 0)
 +		goto report_fail;
 +
@@ -1151,38 +980,21 @@ index 000000000000..8dc7df3c5cd5
 +
 +DEVICE_ATTR_RW(gamepad_mode);
 +
-+/********** ROOT LEVEL ATTRS **********************************************************************/
-+static struct attribute *gamepad_device_attrs[] = { 
-+	&dev_attr_gamepad_mode.attr,
-+	&dev_attr_btn_mapping_reset.attr,
-+	&dev_attr_btn_mapping_apply.attr,
-+	NULL };
++/********** VIBRATION INTENSITY ******************************************************************/
++static ssize_t gamepad_vibration_intensity_index_show(struct device *raw_dev,
++						      struct device_attribute *attr, char *buf)
++{
++	return sysfs_emit(buf, "left right\n");
++}
 +
-+static const struct attribute_group ally_controller_attr_group = {
-+	.attrs = gamepad_device_attrs,
-+};
++ALLY_DEVICE_ATTR_RO(gamepad_vibration_intensity_index, vibration_intensity_index);
 +
-+/********** ANALOGUE DEADZONES ********************************************************************/
-+static ssize_t __gamepad_set_deadzones(struct device *raw_dev, enum xpad_axis axis, const char *buf)
++static ssize_t __gamepad_write_vibe_intensity_to_mcu(struct device *raw_dev)
 +{
 +	struct asus_rog_ally *rog_ally = __rog_ally_data(raw_dev);
 +	struct hid_device *hdev = to_hid_device(raw_dev);
-+	int ret, cmd, side, is_tr;
-+	u32 inner, outer;
 +	u8 *hidbuf;
-+
-+	if (sscanf(buf, "%d %d", &inner, &outer) != 2)
-+		return -EINVAL;
-+
-+	if (inner > 64 || outer > 64 || inner > outer)
-+		return -EINVAL;
-+
-+	is_tr = axis > xpad_axis_xy_right;
-+	side = axis == xpad_axis_xy_right || axis == xpad_axis_z_right ? 2 : 0;
-+	cmd = is_tr ? xpad_cmd_set_js_dz : xpad_cmd_set_tr_dz;
-+
-+	rog_ally->deadzones[is_tr][side] = inner;
-+	rog_ally->deadzones[is_tr][side + 1] = outer;
++	int ret;
 +
 +	ret = __gamepad_check_ready(hdev);
 +	if (ret < 0)
@@ -1194,16 +1006,131 @@ index 000000000000..8dc7df3c5cd5
 +
 +	hidbuf[0] = FEATURE_KBD_REPORT_ID;
 +	hidbuf[1] = 0xD1;
-+	hidbuf[2] = cmd;
-+	hidbuf[3] = 0x04; // length
-+	hidbuf[4] = rog_ally->deadzones[is_tr][0];
-+	hidbuf[5] = rog_ally->deadzones[is_tr][1];
-+	hidbuf[6] = rog_ally->deadzones[is_tr][2];
-+	hidbuf[7] = rog_ally->deadzones[is_tr][3];
++	hidbuf[2] = xpad_cmd_set_vibe_intensity;
++	hidbuf[3] = 0x02; // length
++	hidbuf[4] = rog_ally->anti_deadzones[rog_ally->mode][btn_pair_side_left];
++	hidbuf[5] = rog_ally->anti_deadzones[rog_ally->mode][btn_pair_side_right];
++
++	ret = __gamepad_check_ready(hdev);
++	if (ret < 0)
++		goto report_fail;
 +
 +	ret = asus_kbd_set_report(hdev, hidbuf, FEATURE_ROG_ALLY_REPORT_SIZE);
++	if (ret < 0)
++		goto report_fail;
++
++report_fail:
 +	kfree(hidbuf);
 +	return ret;
++}
++
++static ssize_t gamepad_vibration_intensity_show(struct device *raw_dev,
++						struct device_attribute *attr, char *buf)
++{
++	struct asus_rog_ally *rog_ally = __rog_ally_data(raw_dev);
++	return sysfs_emit(buf, "%d %d\n",
++			  rog_ally->anti_deadzones[rog_ally->mode][btn_pair_side_left],
++			  rog_ally->anti_deadzones[rog_ally->mode][btn_pair_side_right]);
++}
++
++static ssize_t gamepad_vibration_intensity_store(struct device *raw_dev,
++						 struct device_attribute *attr, const char *buf,
++						 size_t count)
++{
++	struct asus_rog_ally *rog_ally = __rog_ally_data(raw_dev);
++	u32 left, right;
++
++	if (sscanf(buf, "%d %d", &left, &right) != 2)
++		return -EINVAL;
++
++	if (left > 64 || right > 64)
++		return -EINVAL;
++
++	rog_ally->vibration_intensity[rog_ally->mode][btn_pair_side_left] = left;
++	rog_ally->vibration_intensity[rog_ally->mode][btn_pair_side_right] = right;
++
++	return count;
++}
++
++ALLY_DEVICE_ATTR_RW(gamepad_vibration_intensity, vibration_intensity);
++
++/********** ROOT LEVEL ATTRS **********************************************************************/
++static struct attribute *gamepad_device_attrs[] = { &dev_attr_gamepad_mode.attr,
++						    &dev_attr_btn_mapping_reset.attr,
++						    &dev_attr_btn_mapping_apply.attr,
++						    &dev_attr_gamepad_vibration_intensity.attr,
++						    &dev_attr_gamepad_vibration_intensity_index.attr,
++						    NULL };
++
++static const struct attribute_group ally_controller_attr_group = {
++	.attrs = gamepad_device_attrs,
++};
++
++/********** ANALOGUE DEADZONES ********************************************************************/
++static ssize_t __gamepad_set_deadzones(struct device *raw_dev)
++{
++	struct asus_rog_ally *rog_ally = __rog_ally_data(raw_dev);
++	struct hid_device *hdev = to_hid_device(raw_dev);
++	u8 *hidbuf;
++	int ret;
++
++	ret = __gamepad_check_ready(hdev);
++	if (ret < 0)
++		return ret;
++
++	hidbuf = kzalloc(FEATURE_ROG_ALLY_REPORT_SIZE, GFP_KERNEL);
++	if (!hidbuf)
++		return -ENOMEM;
++
++	hidbuf[0] = FEATURE_KBD_REPORT_ID;
++	hidbuf[1] = 0xD1;
++	hidbuf[2] = xpad_cmd_set_js_dz;
++	hidbuf[3] = 0x04; // length
++	hidbuf[4] = rog_ally->deadzones[rog_ally->mode][0][0];
++	hidbuf[5] = rog_ally->deadzones[rog_ally->mode][0][1];
++	hidbuf[6] = rog_ally->deadzones[rog_ally->mode][0][2];
++	hidbuf[7] = rog_ally->deadzones[rog_ally->mode][0][3];
++
++	ret = asus_kbd_set_report(hdev, hidbuf, FEATURE_ROG_ALLY_REPORT_SIZE);
++	if (ret < 0)
++		goto end;
++
++	hidbuf[2] = xpad_cmd_set_tr_dz;
++	hidbuf[4] = rog_ally->deadzones[rog_ally->mode][1][0];
++	hidbuf[5] = rog_ally->deadzones[rog_ally->mode][1][1];
++	hidbuf[6] = rog_ally->deadzones[rog_ally->mode][1][2];
++	hidbuf[7] = rog_ally->deadzones[rog_ally->mode][1][3];
++
++	ret = asus_kbd_set_report(hdev, hidbuf, FEATURE_ROG_ALLY_REPORT_SIZE);
++	if (ret < 0)
++		goto end;
++
++end:
++	kfree(hidbuf);
++	return ret;
++}
++
++static ssize_t __gamepad_store_deadzones(struct device *raw_dev, enum xpad_axis axis,
++					 const char *buf)
++{
++	struct asus_rog_ally *rog_ally = __rog_ally_data(raw_dev);
++	int cmd, side, is_tr;
++	u32 inner, outer;
++
++	if (sscanf(buf, "%d %d", &inner, &outer) != 2)
++		return -EINVAL;
++
++	if (inner > 64 || outer > 64 || inner > outer)
++		return -EINVAL;
++
++	is_tr = axis > xpad_axis_xy_right;
++	side = axis == xpad_axis_xy_right || axis == xpad_axis_z_right ? 2 : 0;
++	cmd = is_tr ? xpad_cmd_set_js_dz : xpad_cmd_set_tr_dz;
++
++	rog_ally->deadzones[rog_ally->mode][is_tr][side] = inner;
++	rog_ally->deadzones[rog_ally->mode][is_tr][side + 1] = outer;
++
++	return 0;
 +}
 +
 +static ssize_t axis_xyz_deadzone_index_show(struct device *raw_dev, struct device_attribute *attr,
@@ -1212,93 +1139,217 @@ index 000000000000..8dc7df3c5cd5
 +	return sysfs_emit(buf, "inner outer\n");
 +}
 +
-+static ssize_t axis_xy_left_deadzone_show(struct device *raw_dev, struct device_attribute *attr,
++ALLY_DEVICE_ATTR_RO(axis_xyz_deadzone_index, deadzone_index);
++
++ALLY_AXIS_DEADZONE(xpad_axis_xy_left, deadzone);
++ALLY_AXIS_DEADZONE(xpad_axis_xy_right, deadzone);
++ALLY_AXIS_DEADZONE(xpad_axis_z_left, deadzone);
++ALLY_AXIS_DEADZONE(xpad_axis_z_right, deadzone);
++
++/********** ANTI-DEADZONES ***********************************************************************/
++static ssize_t __gamepad_write_js_ADZ_to_mcu(struct device *raw_dev)
++{
++	struct asus_rog_ally *rog_ally = __rog_ally_data(raw_dev);
++	struct hid_device *hdev = to_hid_device(raw_dev);
++	u8 *hidbuf;
++	int ret;
++
++	ret = __gamepad_check_ready(hdev);
++	if (ret < 0)
++		return ret;
++
++	hidbuf = kzalloc(FEATURE_ROG_ALLY_REPORT_SIZE, GFP_KERNEL);
++	if (!hidbuf)
++		return -ENOMEM;
++
++	hidbuf[0] = FEATURE_KBD_REPORT_ID;
++	hidbuf[1] = 0xD1;
++	hidbuf[2] = xpad_cmd_set_adz;
++	hidbuf[3] = 0x02; // length
++	hidbuf[4] = rog_ally->anti_deadzones[rog_ally->mode][btn_pair_side_left];
++	hidbuf[5] = rog_ally->anti_deadzones[rog_ally->mode][btn_pair_side_right];
++
++	ret = __gamepad_check_ready(hdev);
++	if (ret < 0)
++		goto report_fail;
++
++	ret = asus_kbd_set_report(hdev, hidbuf, FEATURE_ROG_ALLY_REPORT_SIZE);
++	if (ret < 0)
++		goto report_fail;
++
++report_fail:
++	kfree(hidbuf);
++	return ret;
++}
++
++static ssize_t __gamepad_js_ADZ_store(struct device *raw_dev, const char *buf,
++				      enum btn_pair_side side)
++{
++	struct asus_rog_ally *rog_ally = __rog_ally_data(raw_dev);
++	int ret, val;
++
++	ret = kstrtoint(buf, 0, &val);
++	if (ret)
++		return ret;
++
++	if (val < 0 || val > 64)
++		return -EINVAL;
++
++	rog_ally->anti_deadzones[rog_ally->mode][side] = val;
++
++	return ret;
++}
++
++static ssize_t xpad_axis_xy_left_ADZ_show(struct device *raw_dev, struct device_attribute *attr,
 +					  char *buf)
 +{
 +	struct asus_rog_ally *rog_ally = __rog_ally_data(raw_dev);
-+	return sysfs_emit(buf, "%d %d\n", rog_ally->deadzones[0][0], rog_ally->deadzones[0][1]);
++	return sysfs_emit(buf, "%d\n",
++			  rog_ally->anti_deadzones[rog_ally->mode][btn_pair_side_left]);
 +}
 +
-+static ssize_t axis_xy_left_deadzone_store(struct device *raw_dev, struct device_attribute *attr,
++static ssize_t xpad_axis_xy_left_ADZ_store(struct device *raw_dev, struct device_attribute *attr,
 +					   const char *buf, size_t count)
 +{
-+	int ret = __gamepad_set_deadzones(raw_dev, xpad_axis_xy_left, buf);
-+	if (ret < 0)
++	int ret = __gamepad_js_ADZ_store(raw_dev, buf, btn_pair_side_left);
++	if (ret)
 +		return ret;
++
 +	return count;
 +}
 +
-+static ssize_t axis_xy_right_deadzone_show(struct device *raw_dev, struct device_attribute *attr,
++ALLY_DEVICE_ATTR_RW(xpad_axis_xy_left_ADZ, anti_deadzone);
++
++static ssize_t xpad_axis_xy_right_ADZ_show(struct device *raw_dev, struct device_attribute *attr,
 +					   char *buf)
 +{
 +	struct asus_rog_ally *rog_ally = __rog_ally_data(raw_dev);
-+	return sysfs_emit(buf, "%d %d\n", rog_ally->deadzones[0][2], rog_ally->deadzones[0][3]);
++	return sysfs_emit(buf, "%d\n",
++			  rog_ally->anti_deadzones[rog_ally->mode][btn_pair_side_right]);
 +}
 +
-+static ssize_t axis_xy_right_deadzone_store(struct device *raw_dev, struct device_attribute *attr,
++static ssize_t xpad_axis_xy_right_ADZ_store(struct device *raw_dev, struct device_attribute *attr,
 +					    const char *buf, size_t count)
 +{
-+	int ret = __gamepad_set_deadzones(raw_dev, xpad_axis_xy_right, buf);
-+	if (ret < 0)
++	int ret = __gamepad_js_ADZ_store(raw_dev, buf, btn_pair_side_right);
++	if (ret)
 +		return ret;
++
 +	return count;
 +}
 +
-+static ssize_t axis_z_left_deadzone_show(struct device *raw_dev, struct device_attribute *attr,
-+					 char *buf)
++ALLY_DEVICE_ATTR_RW(xpad_axis_xy_right_ADZ, anti_deadzone);
++
++/********** JS RESPONSE CURVES *******************************************************************/
++static ssize_t rc_point_index_show(struct device *raw_dev, struct device_attribute *attr, char *buf)
++{
++	return sysfs_emit(buf, "move response\n");
++}
++
++ALLY_DEVICE_ATTR_RO(rc_point_index, rc_point_index);
++
++static ssize_t __gamepad_write_response_curves_to_mcu(struct device *raw_dev)
 +{
 +	struct asus_rog_ally *rog_ally = __rog_ally_data(raw_dev);
-+	return sysfs_emit(buf, "%d %d\n", rog_ally->deadzones[1][0], rog_ally->deadzones[1][1]);
-+}
++	struct hid_device *hdev = to_hid_device(raw_dev);
++	u8 *hidbuf;
++	int ret;
 +
-+static ssize_t axis_z_left_deadzone_store(struct device *raw_dev, struct device_attribute *attr,
-+					  const char *buf, size_t count)
-+{
-+	int ret = __gamepad_set_deadzones(raw_dev, xpad_axis_z_left, buf);
++	ret = __gamepad_check_ready(hdev);
 +	if (ret < 0)
 +		return ret;
-+	return count;
++
++	hidbuf = kzalloc(FEATURE_ROG_ALLY_REPORT_SIZE, GFP_KERNEL);
++	if (!hidbuf)
++		return -ENOMEM;
++
++	hidbuf[0] = FEATURE_KBD_REPORT_ID;
++	hidbuf[1] = 0xD1;
++	hidbuf[2] = xpad_cmd_set_response_curve;
++	hidbuf[3] = 0x09; // length
++	hidbuf[4] = 0x01;
++	memcpy(&hidbuf[5], &rog_ally->response_curve[rog_ally->mode][btn_pair_side_left], 8);
++
++	ret = __gamepad_check_ready(hdev);
++	if (ret < 0)
++		goto report_fail;
++
++	hidbuf[4] = 0x02;
++	memcpy(&hidbuf[5], &rog_ally->response_curve[rog_ally->mode][btn_pair_side_right], 8);
++
++	ret = __gamepad_check_ready(hdev);
++	if (ret < 0)
++		goto report_fail;
++
++	ret = asus_kbd_set_report(hdev, hidbuf, FEATURE_ROG_ALLY_REPORT_SIZE);
++	if (ret < 0)
++		goto report_fail;
++
++report_fail:
++	kfree(hidbuf);
++	return ret;
 +}
 +
-+static ssize_t axis_z_right_deadzone_show(struct device *raw_dev, struct device_attribute *attr,
-+					  char *buf)
++static ssize_t __gamepad_store_response_curve(struct device *raw_dev, const char *buf,
++					      enum btn_pair_side side, int point)
 +{
 +	struct asus_rog_ally *rog_ally = __rog_ally_data(raw_dev);
-+	return sysfs_emit(buf, "%d %d\n", rog_ally->deadzones[1][2], rog_ally->deadzones[1][3]);
++	int idx = (point - 1) * 2;
++	u32 move, response;
++
++	if (sscanf(buf, "%d %d", &move, &response) != 2)
++		return -EINVAL;
++
++	if (move > 64 || response > 64)
++		return -EINVAL;
++
++	rog_ally->response_curve[rog_ally->mode][side][idx] = move;
++	rog_ally->response_curve[rog_ally->mode][side][idx + 1] = response;
++
++	return 0;
 +}
 +
-+static ssize_t axis_z_right_deadzone_store(struct device *raw_dev, struct device_attribute *attr,
-+					   const char *buf, size_t count)
-+{
-+	int ret = __gamepad_set_deadzones(raw_dev, xpad_axis_z_right, buf);
-+	if (ret < 0)
-+		return ret;
-+	return count;
-+}
++ALLY_JS_RC_POINT(left, 1, rc_point_);
++ALLY_JS_RC_POINT(left, 2, rc_point_);
++ALLY_JS_RC_POINT(left, 3, rc_point_);
++ALLY_JS_RC_POINT(left, 4, rc_point_);
 +
-+ALLY_DEVICE_ATTR_RO(axis_xyz_deadzone_index, deadzone_index);
-+ALLY_DEVICE_ATTR_RW(axis_xy_left_deadzone, deadzone);
-+ALLY_DEVICE_ATTR_RW(axis_xy_right_deadzone, deadzone);
-+ALLY_DEVICE_ATTR_RW(axis_z_left_deadzone, deadzone);
-+ALLY_DEVICE_ATTR_RW(axis_z_right_deadzone, deadzone);
++ALLY_JS_RC_POINT(right, 1, rc_point_);
++ALLY_JS_RC_POINT(right, 2, rc_point_);
++ALLY_JS_RC_POINT(right, 3, rc_point_);
++ALLY_JS_RC_POINT(right, 4, rc_point_);
 +
-+static struct attribute *gamepad_axis_xy_left_attrs[] = { &dev_attr_axis_xy_left_deadzone.attr,
++static struct attribute *gamepad_axis_xy_left_attrs[] = { &dev_attr_xpad_axis_xy_left_deadzone.attr,
 +							  &dev_attr_axis_xyz_deadzone_index.attr,
++							  &dev_attr_xpad_axis_xy_left_ADZ.attr,
++							  &dev_attr_rc_point_left_1.attr,
++							  &dev_attr_rc_point_left_2.attr,
++							  &dev_attr_rc_point_left_3.attr,
++							  &dev_attr_rc_point_left_4.attr,
++							  &dev_attr_rc_point_index.attr,
 +							  NULL };
 +static const struct attribute_group ally_controller_axis_xy_left_attr_group = {
 +	.name = "axis_xy_left",
 +	.attrs = gamepad_axis_xy_left_attrs,
 +};
 +
-+static struct attribute *gamepad_axis_xy_right_attrs[] = { &dev_attr_axis_xy_right_deadzone.attr,
-+							   &dev_attr_axis_xyz_deadzone_index.attr,
-+							   NULL };
++static struct attribute *gamepad_axis_xy_right_attrs[] = {
++	&dev_attr_xpad_axis_xy_right_deadzone.attr,
++	&dev_attr_axis_xyz_deadzone_index.attr,
++	&dev_attr_xpad_axis_xy_right_ADZ.attr,
++	&dev_attr_rc_point_right_1.attr,
++	&dev_attr_rc_point_right_2.attr,
++	&dev_attr_rc_point_right_3.attr,
++	&dev_attr_rc_point_right_4.attr,
++	&dev_attr_rc_point_index.attr,
++	NULL
++};
 +static const struct attribute_group ally_controller_axis_xy_right_attr_group = {
 +	.name = "axis_xy_right",
 +	.attrs = gamepad_axis_xy_right_attrs,
 +};
 +
-+static struct attribute *gamepad_axis_z_left_attrs[] = { &dev_attr_axis_z_left_deadzone.attr,
++static struct attribute *gamepad_axis_z_left_attrs[] = { &dev_attr_xpad_axis_z_left_deadzone.attr,
 +							 &dev_attr_axis_xyz_deadzone_index.attr,
 +							 NULL };
 +static const struct attribute_group ally_controller_axis_z_left_attr_group = {
@@ -1306,10 +1357,9 @@ index 000000000000..8dc7df3c5cd5
 +	.attrs = gamepad_axis_z_left_attrs,
 +};
 +
-+static struct attribute *gamepad_axis_z_right_attrs[] = { &dev_attr_axis_z_right_deadzone.attr,
++static struct attribute *gamepad_axis_z_right_attrs[] = { &dev_attr_xpad_axis_z_right_deadzone.attr,
 +							  &dev_attr_axis_xyz_deadzone_index.attr,
 +							  NULL };
-+
 +static const struct attribute_group ally_controller_axis_z_right_attr_group = {
 +	.name = "axis_z_right",
 +	.attrs = gamepad_axis_z_right_attrs,
@@ -1340,6 +1390,72 @@ index 000000000000..8dc7df3c5cd5
 +	NULL
 +};
 +
++static int __gamepad_write_all_to_mcu(struct device *raw_dev)
++{
++	struct asus_rog_ally *rog_ally = __rog_ally_data(raw_dev);
++	struct hid_device *hdev = to_hid_device(raw_dev);
++	u8 *hidbuf;
++	int ret = 0;
++
++	ret = __gamepad_set_mapping(&hdev->dev, btn_pair_dpad_u_d);
++	if (ret < 0)
++		return ret;
++	ret = __gamepad_set_mapping(&hdev->dev, btn_pair_dpad_l_r);
++	if (ret < 0)
++		return ret;
++	ret = __gamepad_set_mapping(&hdev->dev, btn_pair_ls_rs);
++	if (ret < 0)
++		return ret;
++	ret = __gamepad_set_mapping(&hdev->dev, btn_pair_lb_rb);
++	if (ret < 0)
++		return ret;
++	ret = __gamepad_set_mapping(&hdev->dev, btn_pair_a_b);
++	if (ret < 0)
++		return ret;
++	ret = __gamepad_set_mapping(&hdev->dev, btn_pair_x_y);
++	if (ret < 0)
++		return ret;
++	ret = __gamepad_set_mapping(&hdev->dev, btn_pair_view_menu);
++	if (ret < 0)
++		return ret;
++	ret = __gamepad_set_mapping(&hdev->dev, btn_pair_m1_m2);
++	if (ret < 0)
++		return ret;
++	__gamepad_set_mapping(&hdev->dev, btn_pair_lt_rt);
++	if (ret < 0)
++		return ret;
++	__gamepad_set_deadzones(raw_dev);
++	if (ret < 0)
++		return ret;
++	__gamepad_write_js_ADZ_to_mcu(raw_dev);
++	if (ret < 0)
++		return ret;
++	__gamepad_write_vibe_intensity_to_mcu(raw_dev);
++	if (ret < 0)
++		return ret;
++	__gamepad_write_response_curves_to_mcu(raw_dev);
++	if (ret < 0)
++		return ret;
++
++	ret = __gamepad_check_ready(hdev);
++	if (ret < 0)
++		return ret;
++
++	/* set turbo */
++	hidbuf = kzalloc(FEATURE_ROG_ALLY_REPORT_SIZE, GFP_KERNEL);
++	if (!hidbuf)
++		return -ENOMEM;
++	hidbuf[0] = FEATURE_KBD_REPORT_ID;
++	hidbuf[1] = 0xD1;
++	hidbuf[2] = xpad_cmd_set_turbo;
++	hidbuf[3] = 0x20; // length
++	memcpy(&hidbuf[4], rog_ally->turbo_btns[rog_ally->mode], TURBO_BLOCK_LEN);
++	ret = asus_kbd_set_report(hdev, hidbuf, FEATURE_ROG_ALLY_REPORT_SIZE);
++
++	kfree(hidbuf);
++	return ret;
++}
++
 +static int asus_rog_ally_probe(struct hid_device *hdev, const struct rog_ops *ops)
 +{
 +	struct asus_drvdata *drvdata = hid_get_drvdata(hdev);
@@ -1365,11 +1481,33 @@ index 000000000000..8dc7df3c5cd5
 +					ret = -ENOMEM;
 +					goto err_stop_hw;
 +				}
++				// TODO: move these to functions
 +				drvdata->rog_ally_data->mode = xpad_mode_game;
-+				drvdata->rog_ally_data->deadzones[0][1] = 64;
-+				drvdata->rog_ally_data->deadzones[0][3] = 64;
-+				drvdata->rog_ally_data->deadzones[1][1] = 64;
-+				drvdata->rog_ally_data->deadzones[1][3] = 64;
++				drvdata->rog_ally_data->deadzones[xpad_mode_game][0][1] = 64;
++				drvdata->rog_ally_data->deadzones[xpad_mode_game][0][3] = 64;
++				drvdata->rog_ally_data->deadzones[xpad_mode_game][1][1] = 64;
++				drvdata->rog_ally_data->deadzones[xpad_mode_game][1][3] = 64;
++
++				drvdata->rog_ally_data->anti_deadzones[xpad_mode_game][0] = 64;
++				drvdata->rog_ally_data->anti_deadzones[xpad_mode_game][1] = 64;
++
++				drvdata->rog_ally_data->response_curve[xpad_mode_game][0][0] = 0x14;
++				drvdata->rog_ally_data->response_curve[xpad_mode_game][0][1] = 0x14;
++				drvdata->rog_ally_data->response_curve[xpad_mode_game][0][2] = 0x28;
++				drvdata->rog_ally_data->response_curve[xpad_mode_game][0][3] = 0x28;
++				drvdata->rog_ally_data->response_curve[xpad_mode_game][0][4] = 0x3c;
++				drvdata->rog_ally_data->response_curve[xpad_mode_game][0][5] = 0x3c;
++				drvdata->rog_ally_data->response_curve[xpad_mode_game][0][6] = 0x50;
++				drvdata->rog_ally_data->response_curve[xpad_mode_game][0][7] = 0x50;
++
++				drvdata->rog_ally_data->response_curve[xpad_mode_game][1][0] = 0x14;
++				drvdata->rog_ally_data->response_curve[xpad_mode_game][1][1] = 0x14;
++				drvdata->rog_ally_data->response_curve[xpad_mode_game][1][2] = 0x28;
++				drvdata->rog_ally_data->response_curve[xpad_mode_game][1][3] = 0x28;
++				drvdata->rog_ally_data->response_curve[xpad_mode_game][1][4] = 0x3c;
++				drvdata->rog_ally_data->response_curve[xpad_mode_game][1][5] = 0x3c;
++				drvdata->rog_ally_data->response_curve[xpad_mode_game][1][6] = 0x50;
++				drvdata->rog_ally_data->response_curve[xpad_mode_game][1][7] = 0x50;
 +
 +				ret = __gamepad_set_mode(&hdev->dev, xpad_mode_game);
 +				if (ret < 0)
@@ -1411,10 +1549,10 @@ index 000000000000..8dc7df3c5cd5
 +};
 diff --git a/drivers/hid/hid-asus-rog.h b/drivers/hid/hid-asus-rog.h
 new file mode 100644
-index 000000000000..d0e6b81798c4
+index 000000000000..bbddf9024d0e
 --- /dev/null
 +++ b/drivers/hid/hid-asus-rog.h
-@@ -0,0 +1,380 @@
+@@ -0,0 +1,444 @@
 +// SPDX-License-Identifier: GPL-2.0-or-later
 +/*
 + *  HID driver for Asus ROG laptops and Ally
@@ -1590,6 +1728,69 @@ index 000000000000..d0e6b81798c4
 +#define ALLY_DEVICE_ATTR_WO(_name, _sysfs_name) \
 +	struct device_attribute dev_attr_##_name = __ATTR(_sysfs_name, 0200, NULL, _name##_store)
 +
++/* response curve macros */
++#define ALLY_RESP_CURVE_SHOW(_name, _point_n)                                                    \
++	static ssize_t _name##_show(struct device *raw_dev, struct device_attribute *attr,       \
++				    char *buf)                                                   \
++	{                                                                                        \
++		struct asus_rog_ally *rog_ally = __rog_ally_data(raw_dev);                       \
++		int idx = (_point_n - 1) * 2;                                                    \
++		return sysfs_emit(                                                               \
++			buf, "%d %d\n",                                                          \
++			rog_ally->response_curve[rog_ally->mode][btn_pair_side_left][idx],       \
++			rog_ally->response_curve[rog_ally->mode][btn_pair_side_right][idx + 1]); \
++	}
++
++#define ALLY_RESP_CURVE_STORE(_name, _side, _point_n)                                         \
++	static ssize_t _name##_store(struct device *raw_dev, struct device_attribute *attr,   \
++				     const char *buf, size_t count)                           \
++	{                                                                                     \
++		int ret = __gamepad_store_response_curve(raw_dev, buf, btn_pair_side_##_side, \
++							 _point_n);                           \
++		if (ret < 0)                                                                  \
++			return ret;                                                           \
++		return count;                                                                 \
++	}
++
++/* _point_n must start at 1 */
++#define ALLY_JS_RC_POINT(_side, _point_n, _sysfs_label)                        \
++	ALLY_RESP_CURVE_SHOW(rc_point_##_side##_##_point_n, _point_n);         \
++	ALLY_RESP_CURVE_STORE(rc_point_##_side##_##_point_n, _side, _point_n); \
++	ALLY_DEVICE_ATTR_RW(rc_point_##_side##_##_point_n, _sysfs_label##_point_n);
++
++/* deadzone macros */
++#define ALLY_AXIS_DEADZONE_SHOW(_axis)                                                    \
++	static ssize_t _axis##_deadzone_show(struct device *raw_dev,                      \
++					     struct device_attribute *attr, char *buf)    \
++	{                                                                                 \
++		struct asus_rog_ally *rog_ally = __rog_ally_data(raw_dev);                \
++		int side, is_tr;                                                          \
++                                                                                          \
++		is_tr = _axis > xpad_axis_xy_right;                                       \
++		side = _axis == xpad_axis_xy_right || _axis == xpad_axis_z_right ? 2 : 0; \
++                                                                                          \
++		return sysfs_emit(buf, "%d %d\n",                                         \
++				  rog_ally->deadzones[rog_ally->mode][is_tr][side],       \
++				  rog_ally->deadzones[rog_ally->mode][is_tr][side + 1]);  \
++	}
++
++#define ALLY_AXIS_DEADZONE_STORE(_axis)                                                       \
++	static ssize_t _axis##_deadzone_store(struct device *raw_dev,                         \
++					      struct device_attribute *attr, const char *buf, \
++					      size_t count)                                   \
++	{                                                                                     \
++		int ret = __gamepad_store_deadzones(raw_dev, _axis, buf);                     \
++		if (ret < 0)                                                                  \
++			return ret;                                                           \
++		return count;                                                                 \
++	}
++
++#define ALLY_AXIS_DEADZONE(_axis, _sysfs_label) \
++	ALLY_AXIS_DEADZONE_SHOW(_axis);         \
++	ALLY_AXIS_DEADZONE_STORE(_axis);        \
++	ALLY_DEVICE_ATTR_RW(_axis##_deadzone, _sysfs_label);
++
++/* button specific macros */
 +#define ALLY_BTN_SHOW(_fname, _pair, _side, _secondary)                                     \
 +	static ssize_t _fname##_show(struct device *raw_dev, struct device_attribute *attr, \
 +				     char *buf)                                             \
@@ -1608,50 +1809,46 @@ index 000000000000..d0e6b81798c4
 +		return count;                                                                \
 +	}
 +
-+#define ALLY_BTN_TURBO_SHOW(_fname, _pair, _side)                                     \
++#define ALLY_BTN_TURBO_SHOW(_fname, _pair, _side)                                                 \
 +	static ssize_t _fname##_turbo_show(struct device *raw_dev, struct device_attribute *attr, \
-+				     char *buf)                                             \
-+	{                                                                                   \
-+		return sysfs_emit(buf, "%d\n",                                              \
-+				  __gamepad_turbo_show(raw_dev, _pair, _side));  \
++					   char *buf)                                             \
++	{                                                                                         \
++		return sysfs_emit(buf, "%d\n", __gamepad_turbo_show(raw_dev, _pair, _side));      \
 +	}
 +
-+#define ALLY_BTN_TURBO_STORE(_fname, _pair, _side)                                     \
++#define ALLY_BTN_TURBO_STORE(_fname, _pair, _side)                                                 \
 +	static ssize_t _fname##_turbo_store(struct device *raw_dev, struct device_attribute *attr, \
-+				      const char *buf, size_t count)                         \
-+	{                                                                                    \
-+		int ret = __gamepad_turbo_store(raw_dev, buf, _pair, _side);   \
-+		if (ret < 0)                                                                 \
-+			return ret;                                                          \
-+		return count;                                                                \
++					    const char *buf, size_t count)                         \
++	{                                                                                          \
++		int ret = __gamepad_turbo_store(raw_dev, buf, _pair, _side);                       \
++		if (ret < 0)                                                                       \
++			return ret;                                                                \
++		return count;                                                                      \
 +	}
 +
-+#define ALLY_BTN_ATTRS_GROUP(_name, _fname) \
-+static struct attribute *_fname##_attrs[] = {\
-+	&dev_attr_##_fname.attr,\
-+	&dev_attr_##_fname##_macro.attr,\
-+	&dev_attr_##_fname##_turbo.attr,\
-+	NULL \
-+};\
-+static const struct attribute_group _fname##_attr_group = {\
-+	.name = __stringify(_name),\
-+	.attrs = _fname##_attrs,\
-+};
++#define ALLY_BTN_ATTRS_GROUP(_name, _fname)                                                    \
++	static struct attribute *_fname##_attrs[] = { &dev_attr_##_fname.attr,                 \
++						      &dev_attr_##_fname##_macro.attr,         \
++						      &dev_attr_##_fname##_turbo.attr, NULL }; \
++	static const struct attribute_group _fname##_attr_group = {                            \
++		.name = __stringify(_name),                                                    \
++		.attrs = _fname##_attrs,                                                       \
++	};
 +
-+#define ALLY_BTN_MAPPING(_fname, _pair, _side)    \
++#define ALLY_BTN_MAPPING(_fname, _pair, _side)                            \
 +	ALLY_BTN_SHOW(btn_mapping_##_fname, _pair, _side, false);         \
 +	ALLY_BTN_STORE(btn_mapping_##_fname, _pair, _side, false);        \
-+	\
++                                                                          \
 +	ALLY_BTN_SHOW(btn_mapping_##_fname##_macro, _pair, _side, true);  \
 +	ALLY_BTN_STORE(btn_mapping_##_fname##_macro, _pair, _side, true); \
-+	\
-+	ALLY_BTN_TURBO_SHOW(btn_mapping_##_fname, _pair, _side);         \
-+	ALLY_BTN_TURBO_STORE(btn_mapping_##_fname, _pair, _side);        \
-+	\
-+	ALLY_DEVICE_ATTR_RW(btn_mapping_##_fname, remap);              \
-+	ALLY_DEVICE_ATTR_RW(btn_mapping_##_fname##_macro, macro_remap); \
-+	ALLY_DEVICE_ATTR_RW(btn_mapping_##_fname##_turbo, turbo); \
-+	\
++                                                                          \
++	ALLY_BTN_TURBO_SHOW(btn_mapping_##_fname, _pair, _side);          \
++	ALLY_BTN_TURBO_STORE(btn_mapping_##_fname, _pair, _side);         \
++                                                                          \
++	ALLY_DEVICE_ATTR_RW(btn_mapping_##_fname, remap);                 \
++	ALLY_DEVICE_ATTR_RW(btn_mapping_##_fname##_macro, macro_remap);   \
++	ALLY_DEVICE_ATTR_RW(btn_mapping_##_fname##_turbo, turbo);         \
++                                                                          \
 +	ALLY_BTN_ATTRS_GROUP(btn_##_fname, btn_mapping_##_fname);
 +
 +/* Default blocks for the xpad mode */
@@ -1759,8 +1956,11 @@ index 000000000000..d0e6b81798c4
 +	xpad_cmd_set_mapping = 0x02,
 +	xpad_cmd_set_js_dz = 0x04, /* deadzones */
 +	xpad_cmd_set_tr_dz = 0x05, /* deadzones */
++	xpad_cmd_set_vibe_intensity = 0x06,
 +	xpad_cmd_check_ready = 0x0A,
 +	xpad_cmd_set_turbo = 0x0F,
++	xpad_cmd_set_response_curve = 0x13,
++	xpad_cmd_set_adz = 0x18,
 +};
 +
 +enum xpad_axis {
@@ -1795,6 +1995,8 @@ index 000000000000..d0e6b81798c4
 +	btn_pair_side_left = 0x00,
 +	btn_pair_side_right = 0x01,
 +};
++
++static int __gamepad_write_all_to_mcu(struct device *raw_dev);
 \ No newline at end of file
 diff --git a/drivers/hid/hid-asus.h b/drivers/hid/hid-asus.h
 new file mode 100644
