@@ -10,7 +10,7 @@ _kernelname=-MANJARO
 pkgbase=linux${_basever}
 pkgname=("$pkgbase" "$pkgbase-headers")
 pkgver=6.6.5
-pkgrel=1
+pkgrel=2
 arch=('x86_64')
 url="https://www.kernel.org/"
 license=('GPL2')
@@ -29,10 +29,10 @@ source=(https://git.kernel.org/torvalds/t/linux-${_basekernel}.tar.gz
         # ROG ALLY Patches
         0000-hid-asus-add-const-to-read-only-outgoing-usb-buffer.patch
         0001-hid-asus-reset-the-backlight-brightness-level-on-resume.patch
-        v13-0001-HID-asus-fix-more-n-key-report-descriptors-if-n-.patch
-        v13-0002-HID-asus-make-asus_kbd_init-generic-remove-rog_n.patch
-        v13-0003-HID-asus-add-ROG-Ally-N-Key-ID-and-keycodes.patch
-        v13-0004-HID-asus-add-ROG-Ally-xpad-settings.patch
+        v14.1-0001-HID-asus-fix-more-n-key-report-descriptors-if-.patch
+        v14.1-0002-HID-asus-make-asus_kbd_init-generic-remove-rog.patch
+        v14.1-0003-HID-asus-add-ROG-Ally-N-Key-ID-and-keycodes.patch
+        v14.1-0004-HID-asus-add-ROG-Ally-xpad-settings.patch
         0006-platform-x86-asus-wmi-disable-USB0-hub-on-ROG-Ally-b.patch
         0007-mt7921e_Perform_FLR_to_recovery_the_device.patch
         # AMD GPU reset patches
@@ -63,10 +63,10 @@ sha256sums=('9a72c005a62f109f96ee00552502d16c4f06c248e6baba1629506627396ac0a7'
             '3aa9f1ca47bb078f3c9a52fe61897cf4fe989068cd7e66bfa6644fd605fa40d2'
             'fb2cd8a3ea9d47bd78c99b8ece1f3959c20b4de97a7959a12650f989f5c724da'
             '7f3194f1a7c5ebc27bbfa4559cfd9a2ccffddbbd2d259c0d9c68631cb66c5855'
-            'd8c11847053182e514b7437274af818b5a876789d32287af7309b12d5c427b47'
-            '44e4ca1c20c2f250388136e617a99a7ca74954a94175bcb640e62c1d06249aab'
-            '831c03ed51931a79902fe7f1843ea78d96d48dcfaf028864155ab15c68265e70'
-            '49a9cc5f24444326d19d456d4a807a115975875e6f229483cdbd1740f2c74486'
+            '176adde8fc3069bd28393bf0c9d788f1b0f9a186678aec4dc17b0b081c57f97b'
+            '493fa177cf602f087e981e95fad3764e305f4c486d4c2ef78255388b913be9cf'
+            '50ea381758fb8a8566f38a509fe7cf0448c77eaec5103066cafc2ecf02db1e9f'
+            '970687b811034e722befde62bcf6d51c7442a217074ed0fb71460bb1803f4c64'
             '836e88044263f7bc474ca466b3d0d98c39e265db94925c300d0b138492946a13'
             'd673d034fbcd80426fd8d9c6af56537c5fe5b55fe49d74e313474d7fc285ecc1'
             '1f62542a889a6c2eafd43acd0699f54720ed891eeda66a4a9261d75b92f28b7f'

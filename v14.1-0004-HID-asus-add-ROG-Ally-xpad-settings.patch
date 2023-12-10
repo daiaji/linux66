@@ -1,7 +1,7 @@
-From 65783d673426cd9503812625eb5a4e24b5bbb4ea Mon Sep 17 00:00:00 2001
+From fc88194fbc824967cce666a6e2ab4b47722f8d01 Mon Sep 17 00:00:00 2001
 From: "Luke D. Jones" <luke@ljones.dev>
 Date: Fri, 1 Dec 2023 16:57:19 +1300
-Subject: [PATCH v13 4/4] HID: asus: add ROG Ally xpad settings
+Subject: [PATCH v14.1 4/4] HID: asus: add ROG Ally xpad settings
 
 - move ROG specific stuff to new .c
 - add a header for common parts
@@ -13,14 +13,15 @@ Subject: [PATCH v13 4/4] HID: asus: add ROG Ally xpad settings
 - add turbo mode for individual buttons
 - add joystick response curves
 - add vibration intensity settings
+- add calibration setting
 ---
- .../ABI/testing/sysfs-driver-hid-asus         |   74 +
+ .../ABI/testing/sysfs-driver-hid-asus         |   85 +
  drivers/hid/Makefile                          |    2 +
  drivers/hid/{hid-asus.c => hid-asus-core.c}   |   71 +-
- drivers/hid/hid-asus-rog.c                    | 1258 +++++++++++++++++
- drivers/hid/hid-asus-rog.h                    |  444 ++++++
+ drivers/hid/hid-asus-rog.c                    | 1457 +++++++++++++++++
+ drivers/hid/hid-asus-rog.h                    |  482 ++++++
  drivers/hid/hid-asus.h                        |   58 +
- 6 files changed, 1866 insertions(+), 41 deletions(-)
+ 6 files changed, 2114 insertions(+), 41 deletions(-)
  create mode 100644 Documentation/ABI/testing/sysfs-driver-hid-asus
  rename drivers/hid/{hid-asus.c => hid-asus-core.c} (96%)
  create mode 100644 drivers/hid/hid-asus-rog.c
@@ -29,10 +30,10 @@ Subject: [PATCH v13 4/4] HID: asus: add ROG Ally xpad settings
 
 diff --git a/Documentation/ABI/testing/sysfs-driver-hid-asus b/Documentation/ABI/testing/sysfs-driver-hid-asus
 new file mode 100644
-index 000000000000..fa822ef95cba
+index 000000000000..736233ebb38f
 --- /dev/null
 +++ b/Documentation/ABI/testing/sysfs-driver-hid-asus
-@@ -0,0 +1,74 @@
+@@ -0,0 +1,85 @@
 +What:		/sys/bus/usb/devices/1-3:1.0/0003:0B05:1ABE.0001/gamepad_mode
 +Date:		December 2023
 +Contact:	linux-input@vger.kernel.org
@@ -71,6 +72,17 @@ index 000000000000..fa822ef95cba
 +Date:		December 2023
 +Contact:	linux-input@vger.kernel.org
 +Description:	Descriptive labels for joystick deadzone array.
++
++What:		/sys/bus/usb/devices/1-3:1.0/0003:0B05:1ABE.0001/axis_<x/y/z>_<left/right>/calibration
++Date:		December 2023
++Contact:	linux-input@vger.kernel.org
++Description:	Calibration values for the joysticks and trigger analogues. There are no default
++		values as the calibration is determined in userspace.
++
++What:		/sys/bus/usb/devices/1-3:1.0/0003:0B05:1ABE.0001/axis_<x/y/z>_<left/right>/calibration_index
++Date:		December 2023
++Contact:	linux-input@vger.kernel.org
++Description:	Descriptive labels for joystick and triggers calibration array.
 +
 +What:		/sys/bus/usb/devices/1-3:1.0/0003:0B05:1ABE.0001/axis_<x/y>_<left/right>/anti-deadzone
 +Date:		December 2023
@@ -285,10 +297,10 @@ index 3a1a6024d299..026705c43ee1 100644
  	  QUIRK_ROG_CLAYMORE_II_KEYBOARD },
 diff --git a/drivers/hid/hid-asus-rog.c b/drivers/hid/hid-asus-rog.c
 new file mode 100644
-index 000000000000..d319c9b611af
+index 000000000000..f0a2b366a298
 --- /dev/null
 +++ b/drivers/hid/hid-asus-rog.c
-@@ -0,0 +1,1258 @@
+@@ -0,0 +1,1457 @@
 +// SPDX-License-Identifier: GPL-2.0-or-later
 +/*
 + *  HID driver for Asus ROG laptops and Ally
@@ -340,6 +352,10 @@ index 000000000000..d319c9b611af
 +	 *
 +	*/
 +	u8 turbo_btns[xpad_mode_mouse][TURBO_BLOCK_LEN];
++	/*
++	*/
++	u32 js_calibrations[2][6];
++	u32 tr_calibrations[2][2];
 +};
 +
 +static struct asus_rog_ally *__rog_ally_data(struct device *raw_dev)
@@ -933,10 +949,6 @@ index 000000000000..d319c9b611af
 +	hidbuf[3] = 0x01;
 +	hidbuf[4] = val;
 +
-+	ret = __gamepad_check_ready(hdev);
-+	if (ret < 0)
-+		goto report_fail;
-+
 +	ret = asus_kbd_set_report(hdev, hidbuf, FEATURE_ROG_ALLY_REPORT_SIZE);
 +	if (ret < 0)
 +		goto report_fail;
@@ -1319,9 +1331,204 @@ index 000000000000..d319c9b611af
 +ALLY_JS_RC_POINT(right, 3, rc_point_);
 +ALLY_JS_RC_POINT(right, 4, rc_point_);
 +
++/********** CALIBRATIONS *************************************************************************/
++static ssize_t __gamepad_write_cal_to_mcu(struct device *raw_dev, enum xpad_axis axis)
++{
++	struct asus_rog_ally *rog_ally = __rog_ally_data(raw_dev);
++	struct hid_device *hdev = to_hid_device(raw_dev);
++	u8 *hidbuf;
++	u8 *c, side, pkt_len, data_len;
++	int ret, cal, checksum = 0;
++
++	ret = __gamepad_check_ready(hdev);
++	if (ret < 0)
++		return ret;
++
++	hidbuf = kzalloc(FEATURE_ROG_ALLY_REPORT_SIZE, GFP_KERNEL);
++	if (!hidbuf)
++		return -ENOMEM;
++
++	side = axis == xpad_axis_xy_right || axis == xpad_axis_z_right ? 1 : 0;
++	pkt_len = axis > xpad_axis_xy_right ? 0x06 : 0x0E;
++	data_len = axis > xpad_axis_xy_right ? 2 : 6;
++
++	hidbuf[0] = FEATURE_KBD_REPORT_ID;
++	hidbuf[1] = 0xD1;
++	hidbuf[2] = xpad_cmd_set_calibration;
++	hidbuf[3] = pkt_len;
++	hidbuf[4] = 0x01; // second command (set)
++	hidbuf[5] = axis;
++	c = &hidbuf[6]; // pointer
++
++	for (size_t i = 0; i < data_len; i++) {
++		if (axis == xpad_axis_xy_left || axis == xpad_axis_xy_right)
++			cal = rog_ally->js_calibrations[side][i];
++		else
++			cal = rog_ally->tr_calibrations[side][i];
++		*c = (u8)((cal & 0xff00) >> 8);
++		checksum += *c;
++		c += 1;
++		*c = (u8)(cal & 0xff);
++		checksum += *c;
++		c += 1;
++	}
++
++	hidbuf[6 + data_len * 2] = checksum;
++
++	// TODO: debug if
++	printk("CAL: ");
++	for (size_t i = 0; i < 19; i++) {
++		printk(KERN_CONT "%02x,", hidbuf[i]);
++	}
++
++	ret = asus_kbd_set_report(hdev, hidbuf, FEATURE_ROG_ALLY_REPORT_SIZE);
++	if (ret < 0)
++		goto report_fail;
++
++	memset(hidbuf, 0, FEATURE_ROG_ALLY_REPORT_SIZE);
++	hidbuf[0] = FEATURE_KBD_REPORT_ID;
++	hidbuf[1] = 0xD1;
++	hidbuf[2] = xpad_cmd_set_calibration;
++	hidbuf[3] = 0x01; // pkt len
++	hidbuf[4] = 0x03; // second command (set)
++
++	ret = asus_kbd_set_report(hdev, hidbuf, FEATURE_ROG_ALLY_REPORT_SIZE);
++	if (ret < 0)
++		goto report_fail;
++
++report_fail:
++	kfree(hidbuf);
++	return ret;
++}
++
++static ssize_t __gamepad_cal_store(struct device *raw_dev, const char *buf, enum xpad_axis axis)
++{
++	struct asus_rog_ally *rog_ally = __rog_ally_data(raw_dev);
++	u32 x_stable, x_min, x_max, y_stable, y_min, y_max, side;
++
++	if (axis == xpad_axis_xy_left || axis == xpad_axis_xy_right) {
++		if (sscanf(buf, "%d %d %d %d %d %d", &x_stable, &x_min, &x_max, &y_stable, &y_min,
++			   &y_max) != 6)
++			return -EINVAL;
++		//TODO: validate input
++
++		side = axis == xpad_axis_xy_right || axis == xpad_axis_z_right ? 1 : 0;
++		/* stored in reverse order for easy copy to packet */
++		rog_ally->js_calibrations[side][0] = y_stable;
++		rog_ally->js_calibrations[side][1] = y_min;
++		rog_ally->js_calibrations[side][2] = y_max;
++		rog_ally->js_calibrations[side][3] = x_stable;
++		rog_ally->js_calibrations[side][4] = x_min;
++		rog_ally->js_calibrations[side][5] = x_max;
++
++		return __gamepad_write_cal_to_mcu(raw_dev, axis);
++	} else {
++		if (sscanf(buf, "%d %d", &x_stable, &x_max) != 2)
++			return -EINVAL;
++		//TODO: validate input
++
++		side = axis == xpad_axis_xy_right || axis == xpad_axis_z_right ? 1 : 0;
++		rog_ally->tr_calibrations[side][0] = x_stable;
++		rog_ally->tr_calibrations[side][1] = x_max;
++
++		return __gamepad_write_cal_to_mcu(raw_dev, axis);
++	}
++}
++
++static ssize_t __gamepad_cal_show(struct device *raw_dev, char *buf, enum xpad_axis axis)
++{
++	struct asus_rog_ally *rog_ally = __rog_ally_data(raw_dev);
++	int side = axis == xpad_axis_xy_right || axis == xpad_axis_z_right ? 1 : 0;
++
++	if (axis == xpad_axis_xy_left || axis == xpad_axis_xy_right) {
++		return sysfs_emit(buf, "%d %d %d %d %d %d\n", rog_ally->js_calibrations[side][3],
++				  rog_ally->js_calibrations[side][4],
++				  rog_ally->js_calibrations[side][5],
++				  rog_ally->js_calibrations[side][0],
++				  rog_ally->js_calibrations[side][1],
++				  rog_ally->js_calibrations[side][2]);
++	} else {
++		return sysfs_emit(buf, "%d %d\n", rog_ally->tr_calibrations[side][0],
++				  rog_ally->tr_calibrations[side][1]);
++	}
++}
++
++ALLY_CAL_ATTR(xpad_axis_xy_left_cal, xpad_axis_xy_left, calibration);
++ALLY_CAL_ATTR(xpad_axis_xy_right_cal, xpad_axis_xy_right, calibration);
++ALLY_CAL_ATTR(xpad_axis_z_left_cal, xpad_axis_z_left, calibration);
++ALLY_CAL_ATTR(xpad_axis_z_right_cal, xpad_axis_z_right, calibration);
++
++static ssize_t xpad_axis_xy_cal_index_show(struct device *raw_dev, struct device_attribute *attr,
++					   char *buf)
++{
++	return sysfs_emit(buf, "x_stable x_min x_max y_stable y_min y_max\n");
++}
++
++ALLY_DEVICE_ATTR_RO(xpad_axis_xy_cal_index, calibration_index);
++
++static ssize_t xpad_axis_z_cal_index_show(struct device *raw_dev, struct device_attribute *attr,
++					  char *buf)
++{
++	return sysfs_emit(buf, "z_stable z_max\n");
++}
++
++ALLY_DEVICE_ATTR_RO(xpad_axis_z_cal_index, calibration_index);
++
++static ssize_t __gamepad_cal_reset(struct device *raw_dev, const char *buf, enum xpad_axis axis)
++{
++	struct hid_device *hdev = to_hid_device(raw_dev);
++	u8 *hidbuf;
++	u8 side;
++	int ret;
++
++	ret = __gamepad_check_ready(hdev);
++	if (ret < 0)
++		return ret;
++
++	hidbuf = kzalloc(FEATURE_ROG_ALLY_REPORT_SIZE, GFP_KERNEL);
++	if (!hidbuf)
++		return -ENOMEM;
++
++	side = axis == xpad_axis_xy_right || axis == xpad_axis_z_right ? 1 : 0;
++
++	hidbuf[0] = FEATURE_KBD_REPORT_ID;
++	hidbuf[1] = 0xD1;
++	hidbuf[2] = xpad_cmd_set_calibration;
++	hidbuf[3] = 0x02; // pkt len
++	hidbuf[4] = 0x02; // second command (reset)
++	hidbuf[5] = axis;
++
++	ret = asus_kbd_set_report(hdev, hidbuf, FEATURE_ROG_ALLY_REPORT_SIZE);
++	if (ret < 0)
++		goto report_fail;
++
++	memset(hidbuf, 0, FEATURE_ROG_ALLY_REPORT_SIZE);
++	hidbuf[0] = FEATURE_KBD_REPORT_ID;
++	hidbuf[1] = 0xD1;
++	hidbuf[2] = xpad_cmd_set_calibration;
++	hidbuf[3] = 0x01; // pkt len
++	hidbuf[4] = 0x03; // second command (set)
++
++	ret = asus_kbd_set_report(hdev, hidbuf, FEATURE_ROG_ALLY_REPORT_SIZE);
++	if (ret < 0)
++		goto report_fail;
++
++report_fail:
++	kfree(hidbuf);
++	return ret;
++}
++
++ALLY_CAL_RESET_ATTR(xpad_axis_xy_left_cal_reset, xpad_axis_xy_left, calibration_reset);
++ALLY_CAL_RESET_ATTR(xpad_axis_xy_right_cal_reset, xpad_axis_xy_right, calibration_reset);
++ALLY_CAL_RESET_ATTR(xpad_axis_z_left_cal_reset, xpad_axis_z_left, calibration_reset);
++ALLY_CAL_RESET_ATTR(xpad_axis_z_right_cal_reset, xpad_axis_z_right, calibration_reset);
++
 +static struct attribute *gamepad_axis_xy_left_attrs[] = { &dev_attr_xpad_axis_xy_left_deadzone.attr,
 +							  &dev_attr_axis_xyz_deadzone_index.attr,
 +							  &dev_attr_xpad_axis_xy_left_ADZ.attr,
++							  &dev_attr_xpad_axis_xy_left_cal_reset.attr,
++							  &dev_attr_xpad_axis_xy_left_cal.attr,
++							  &dev_attr_xpad_axis_xy_cal_index.attr,
 +							  &dev_attr_rc_point_left_1.attr,
 +							  &dev_attr_rc_point_left_2.attr,
 +							  &dev_attr_rc_point_left_3.attr,
@@ -1337,6 +1544,9 @@ index 000000000000..d319c9b611af
 +	&dev_attr_xpad_axis_xy_right_deadzone.attr,
 +	&dev_attr_axis_xyz_deadzone_index.attr,
 +	&dev_attr_xpad_axis_xy_right_ADZ.attr,
++	&dev_attr_xpad_axis_xy_right_cal_reset.attr,
++	&dev_attr_xpad_axis_xy_right_cal.attr,
++	&dev_attr_xpad_axis_xy_cal_index.attr,
 +	&dev_attr_rc_point_right_1.attr,
 +	&dev_attr_rc_point_right_2.attr,
 +	&dev_attr_rc_point_right_3.attr,
@@ -1349,17 +1559,21 @@ index 000000000000..d319c9b611af
 +	.attrs = gamepad_axis_xy_right_attrs,
 +};
 +
-+static struct attribute *gamepad_axis_z_left_attrs[] = { &dev_attr_xpad_axis_z_left_deadzone.attr,
-+							 &dev_attr_axis_xyz_deadzone_index.attr,
-+							 NULL };
++static struct attribute *gamepad_axis_z_left_attrs[] = {
++	&dev_attr_xpad_axis_z_left_deadzone.attr,  &dev_attr_axis_xyz_deadzone_index.attr,
++	&dev_attr_xpad_axis_z_left_cal.attr,	   &dev_attr_xpad_axis_z_cal_index.attr,
++	&dev_attr_xpad_axis_z_left_cal_reset.attr, NULL
++};
 +static const struct attribute_group ally_controller_axis_z_left_attr_group = {
 +	.name = "axis_z_left",
 +	.attrs = gamepad_axis_z_left_attrs,
 +};
 +
-+static struct attribute *gamepad_axis_z_right_attrs[] = { &dev_attr_xpad_axis_z_right_deadzone.attr,
-+							  &dev_attr_axis_xyz_deadzone_index.attr,
-+							  NULL };
++static struct attribute *gamepad_axis_z_right_attrs[] = {
++	&dev_attr_xpad_axis_z_right_deadzone.attr,  &dev_attr_axis_xyz_deadzone_index.attr,
++	&dev_attr_xpad_axis_z_right_cal.attr,	    &dev_attr_xpad_axis_z_cal_index.attr,
++	&dev_attr_xpad_axis_z_right_cal_reset.attr, NULL
++};
 +static const struct attribute_group ally_controller_axis_z_right_attr_group = {
 +	.name = "axis_z_right",
 +	.attrs = gamepad_axis_z_right_attrs,
@@ -1509,16 +1723,13 @@ index 000000000000..d319c9b611af
 +				drvdata->rog_ally_data->response_curve[xpad_mode_game][1][6] = 0x50;
 +				drvdata->rog_ally_data->response_curve[xpad_mode_game][1][7] = 0x50;
 +
-+				ret = __gamepad_set_mode(&hdev->dev, xpad_mode_game);
-+				if (ret < 0)
-+					return ret;
 +				__gamepad_mapping_xpad_default(drvdata->rog_ally_data);
 +				// these calls will never error so ignore the return
 +				__gamepad_mapping_store(&hdev->dev, "kb_f14", btn_pair_m1_m2,
 +							btn_pair_side_left, false); // M2
 +				__gamepad_mapping_store(&hdev->dev, "kb_f15", btn_pair_m1_m2,
 +							btn_pair_side_right, false); // M1
-+				ret = __gamepad_set_mapping(&hdev->dev, btn_pair_m1_m2);
++				ret = __gamepad_set_mode(&hdev->dev, xpad_mode_game);
 +				if (ret < 0)
 +					return ret;
 +			}
@@ -1549,10 +1760,10 @@ index 000000000000..d319c9b611af
 +};
 diff --git a/drivers/hid/hid-asus-rog.h b/drivers/hid/hid-asus-rog.h
 new file mode 100644
-index 000000000000..bbddf9024d0e
+index 000000000000..4d81f0ce8c59
 --- /dev/null
 +++ b/drivers/hid/hid-asus-rog.h
-@@ -0,0 +1,444 @@
+@@ -0,0 +1,482 @@
 +// SPDX-License-Identifier: GPL-2.0-or-later
 +/*
 + *  HID driver for Asus ROG laptops and Ally
@@ -1851,6 +2062,43 @@ index 000000000000..bbddf9024d0e
 +                                                                          \
 +	ALLY_BTN_ATTRS_GROUP(btn_##_fname, btn_mapping_##_fname);
 +
++/* calibration macros */
++#define ALLY_CAL_STORE(_fname, _axis)                                                  \
++	static ssize_t _fname##_store(struct device *raw_dev, struct device_attribute *attr, \
++				      const char *buf, size_t count)                         \
++	{                                                                                    \
++		int ret = __gamepad_cal_store(raw_dev, buf, _axis);                          \
++		if (ret < 0)                                                                 \
++			return ret;                                                          \
++		return count;                                                                \
++	};
++
++#define ALLY_CAL_SHOW(_fname, _axis)                                     \
++	static ssize_t _fname##_show(struct device *raw_dev, struct device_attribute *attr, \
++				     char *buf)                                             \
++	{                                                                                   \
++		return __gamepad_cal_show(raw_dev, buf, _axis);  \
++	}
++
++#define ALLY_CAL_ATTR(_fname, _axis, _sysfs_label) \
++	ALLY_CAL_STORE(_fname, _axis);             \
++	ALLY_CAL_SHOW(_fname, _axis);             \
++	ALLY_DEVICE_ATTR_RW(_fname, _sysfs_label);
++
++#define ALLY_CAL_RESET_STORE(_fname, _axis)                                                  \
++	static ssize_t _fname##_store(struct device *raw_dev, struct device_attribute *attr, \
++				      const char *buf, size_t count)                         \
++	{                                                                                    \
++		int ret = __gamepad_cal_reset(raw_dev, buf, _axis);                          \
++		if (ret < 0)                                                                 \
++			return ret;                                                          \
++		return count;                                                                \
++	};
++
++#define ALLY_CAL_RESET_ATTR(_fname, _axis, _sysfs_label) \
++	ALLY_CAL_RESET_STORE(_fname, _axis);             \
++	ALLY_DEVICE_ATTR_WO(_fname, _sysfs_label);
++
 +/* Default blocks for the xpad mode */
 +static const u8 XPAD_DEF1[MAPPING_BLOCK_LEN] = {
 +	0x01, 0x09, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x19,
@@ -1958,6 +2206,7 @@ index 000000000000..bbddf9024d0e
 +	xpad_cmd_set_tr_dz = 0x05, /* deadzones */
 +	xpad_cmd_set_vibe_intensity = 0x06,
 +	xpad_cmd_check_ready = 0x0A,
++	xpad_cmd_set_calibration = 0x0D,
 +	xpad_cmd_set_turbo = 0x0F,
 +	xpad_cmd_set_response_curve = 0x13,
 +	xpad_cmd_set_adz = 0x18,
