@@ -10,7 +10,7 @@ _kernelname=-MANJARO
 pkgbase=linux${_basever}
 pkgname=("$pkgbase" "$pkgbase-headers")
 pkgver=6.6.5
-pkgrel=2
+pkgrel=3
 arch=('x86_64')
 url="https://www.kernel.org/"
 license=('GPL2')
@@ -24,6 +24,7 @@ source=(https://git.kernel.org/torvalds/t/linux-${_basekernel}.tar.gz
         0101-ZEN_Add_sysctl_and_CONFIG_to_disallow_unprivileged_CLONE_NEWUSER.patch
         0102-drivers-firmware-skip-simpledrm-if-nvidia-drm.modese.patch
         # MANJARO Patches
+        revert-wifi-cfg80211-fix-cqm-for-non-range-use.patch
         # Realtek patch
         0999-patch_realtek.patch
         # ROG ALLY Patches
@@ -60,6 +61,7 @@ sha256sums=('9a72c005a62f109f96ee00552502d16c4f06c248e6baba1629506627396ac0a7'
             '35a2d72ae01a9c38037ca4617a89d5c846b9b82c2d3d6a17cef0506b3814b2c0'
             '05f04019d4a2ee072238c32860fa80d673687d84d78ef436ae9332b6fb788467'
             'e1d17690dd21e8d5482b63ca66bfe6b478d39e8e8b59eedd53adb0a55ebc308d'
+            '33450069abc0b8e9057281d86ef8dc35a7ba1732751be9f6e3f6c01d23670a71'
             '3aa9f1ca47bb078f3c9a52fe61897cf4fe989068cd7e66bfa6644fd605fa40d2'
             'fb2cd8a3ea9d47bd78c99b8ece1f3959c20b4de97a7959a12650f989f5c724da'
             '7f3194f1a7c5ebc27bbfa4559cfd9a2ccffddbbd2d259c0d9c68631cb66c5855'
