@@ -9,8 +9,8 @@ _basever=${_basekernel//.}
 _kernelname=-MANJARO
 pkgbase=linux${_basever}
 pkgname=("$pkgbase" "$pkgbase-headers")
-pkgver=6.6.5
-pkgrel=3
+pkgver=6.6.6
+pkgrel=1
 arch=('x86_64')
 url="https://www.kernel.org/"
 license=('GPL2')
@@ -24,7 +24,6 @@ source=(https://git.kernel.org/torvalds/t/linux-${_basekernel}.tar.gz
         0101-ZEN_Add_sysctl_and_CONFIG_to_disallow_unprivileged_CLONE_NEWUSER.patch
         0102-drivers-firmware-skip-simpledrm-if-nvidia-drm.modese.patch
         # MANJARO Patches
-        'wifi-nl80211-fix-deadlock-in-nl80211_set_cqm_rssi-(6.6.x).patch'
         # Realtek patch
         0999-patch_realtek.patch
         # ROG ALLY Patches
@@ -57,11 +56,10 @@ else
 fi
 
 sha256sums=('9a72c005a62f109f96ee00552502d16c4f06c248e6baba1629506627396ac0a7'
-            '017b13e9124a92d292205e4dd91ed260d68d140d8cdef28ea59a23d58f70786a'
+            'a886c592f43c0a975d40bb424b83a17f599d64bfb169e3fc9efd32eeb42b1eb2'
             '35a2d72ae01a9c38037ca4617a89d5c846b9b82c2d3d6a17cef0506b3814b2c0'
             '05f04019d4a2ee072238c32860fa80d673687d84d78ef436ae9332b6fb788467'
             'e1d17690dd21e8d5482b63ca66bfe6b478d39e8e8b59eedd53adb0a55ebc308d'
-            '4e4477ca4d7a434a48ed84bb4f223e2ad5ea739ba929804f0e502c948c9ef343'
             '3aa9f1ca47bb078f3c9a52fe61897cf4fe989068cd7e66bfa6644fd605fa40d2'
             'fb2cd8a3ea9d47bd78c99b8ece1f3959c20b4de97a7959a12650f989f5c724da'
             '7f3194f1a7c5ebc27bbfa4559cfd9a2ccffddbbd2d259c0d9c68631cb66c5855'
