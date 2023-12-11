@@ -1,7 +1,7 @@
-From fc88194fbc824967cce666a6e2ab4b47722f8d01 Mon Sep 17 00:00:00 2001
+From d42bd0d81d2b4a1db4c82e19f33c90ac9138bb8b Mon Sep 17 00:00:00 2001
 From: "Luke D. Jones" <luke@ljones.dev>
 Date: Fri, 1 Dec 2023 16:57:19 +1300
-Subject: [PATCH v14.1 4/4] HID: asus: add ROG Ally xpad settings
+Subject: [PATCH v14.3 4/4] HID: asus: add ROG Ally xpad settings
 
 - move ROG specific stuff to new .c
 - add a header for common parts
@@ -18,10 +18,10 @@ Subject: [PATCH v14.1 4/4] HID: asus: add ROG Ally xpad settings
  .../ABI/testing/sysfs-driver-hid-asus         |   85 +
  drivers/hid/Makefile                          |    2 +
  drivers/hid/{hid-asus.c => hid-asus-core.c}   |   71 +-
- drivers/hid/hid-asus-rog.c                    | 1457 +++++++++++++++++
+ drivers/hid/hid-asus-rog.c                    | 1465 +++++++++++++++++
  drivers/hid/hid-asus-rog.h                    |  482 ++++++
  drivers/hid/hid-asus.h                        |   58 +
- 6 files changed, 2114 insertions(+), 41 deletions(-)
+ 6 files changed, 2122 insertions(+), 41 deletions(-)
  create mode 100644 Documentation/ABI/testing/sysfs-driver-hid-asus
  rename drivers/hid/{hid-asus.c => hid-asus-core.c} (96%)
  create mode 100644 drivers/hid/hid-asus-rog.c
@@ -297,10 +297,10 @@ index 3a1a6024d299..026705c43ee1 100644
  	  QUIRK_ROG_CLAYMORE_II_KEYBOARD },
 diff --git a/drivers/hid/hid-asus-rog.c b/drivers/hid/hid-asus-rog.c
 new file mode 100644
-index 000000000000..f0a2b366a298
+index 000000000000..5c977bdb2c32
 --- /dev/null
 +++ b/drivers/hid/hid-asus-rog.c
-@@ -0,0 +1,1457 @@
+@@ -0,0 +1,1465 @@
 +// SPDX-License-Identifier: GPL-2.0-or-later
 +/*
 + *  HID driver for Asus ROG laptops and Ally
@@ -481,7 +481,7 @@ index 000000000000..f0a2b366a298
 +	STR_TO_CODE_ELIF(2, 0x32, KB_B)
 +	STR_TO_CODE_ELIF(2, 0x31, KB_N)
 +	STR_TO_CODE_ELIF(2, 0x3a, KB_M)
-+	STR_TO_CODE_ELIF(2, 0x41, KB_COMA)
++	STR_TO_CODE_ELIF(2, 0x41, KB_COMMA)
 +	STR_TO_CODE_ELIF(2, 0x49, KB_PERIOD)
 +	STR_TO_CODE_ELIF(2, 0x4a, KB_FWDSLASH)
 +	STR_TO_CODE_ELIF(2, 0x89, KB_RSHIFT)
@@ -509,9 +509,9 @@ index 000000000000..f0a2b366a298
 +	STR_TO_CODE_ELIF(2, 0x91, KB_LEFT_ARROW)
 +	STR_TO_CODE_ELIF(2, 0x9b, KB_RIGHT_ARROW)
 +
-+	STR_TO_CODE_ELIF(2, 0x77, NUMPAD_LCK)
++	STR_TO_CODE_ELIF(2, 0x77, NUMPAD_LOCK)
 +	STR_TO_CODE_ELIF(2, 0x90, NUMPAD_FWDSLASH)
-+	STR_TO_CODE_ELIF(2, 0x7c, NUMPAD_STAR)
++	STR_TO_CODE_ELIF(2, 0x7c, NUMPAD_ASTERISK)
 +	STR_TO_CODE_ELIF(2, 0x7b, NUMPAD_HYPHEN)
 +	STR_TO_CODE_ELIF(2, 0x70, NUMPAD_0)
 +	STR_TO_CODE_ELIF(2, 0x69, NUMPAD_1)
@@ -664,7 +664,7 @@ index 000000000000..f0a2b366a298
 +		CODE_TO_STR_IF(2, 0x32, KB_B)
 +		CODE_TO_STR_IF(2, 0x31, KB_N)
 +		CODE_TO_STR_IF(2, 0x3a, KB_M)
-+		CODE_TO_STR_IF(2, 0x41, KB_COMA)
++		CODE_TO_STR_IF(2, 0x41, KB_COMMA)
 +		CODE_TO_STR_IF(2, 0x49, KB_PERIOD)
 +		CODE_TO_STR_IF(2, 0x4a, KB_FWDSLASH)
 +		CODE_TO_STR_IF(2, 0x89, KB_RSHIFT)
@@ -692,9 +692,9 @@ index 000000000000..f0a2b366a298
 +		CODE_TO_STR_IF(2, 0x91, KB_LEFT_ARROW)
 +		CODE_TO_STR_IF(2, 0x9b, KB_RIGHT_ARROW)
 +
-+		CODE_TO_STR_IF(2, 0x77, NUMPAD_LCK)
++		CODE_TO_STR_IF(2, 0x77, NUMPAD_LOCK)
 +		CODE_TO_STR_IF(2, 0x90, NUMPAD_FWDSLASH)
-+		CODE_TO_STR_IF(2, 0x7c, NUMPAD_STAR)
++		CODE_TO_STR_IF(2, 0x7c, NUMPAD_ASTERISK)
 +		CODE_TO_STR_IF(2, 0x7b, NUMPAD_HYPHEN)
 +		CODE_TO_STR_IF(2, 0x70, NUMPAD_0)
 +		CODE_TO_STR_IF(2, 0x69, NUMPAD_1)
@@ -948,6 +948,10 @@ index 000000000000..f0a2b366a298
 +	hidbuf[2] = xpad_cmd_set_mode;
 +	hidbuf[3] = 0x01;
 +	hidbuf[4] = val;
++
++	ret = __gamepad_check_ready(hdev);
++	if (ret < 0)
++		goto report_fail;
 +
 +	ret = asus_kbd_set_report(hdev, hidbuf, FEATURE_ROG_ALLY_REPORT_SIZE);
 +	if (ret < 0)
@@ -1361,10 +1365,7 @@ index 000000000000..f0a2b366a298
 +	c = &hidbuf[6]; // pointer
 +
 +	for (size_t i = 0; i < data_len; i++) {
-+		if (axis == xpad_axis_xy_left || axis == xpad_axis_xy_right)
-+			cal = rog_ally->js_calibrations[side][i];
-+		else
-+			cal = rog_ally->tr_calibrations[side][i];
++		cal = rog_ally->js_calibrations[side][i];
 +		*c = (u8)((cal & 0xff00) >> 8);
 +		checksum += *c;
 +		c += 1;
@@ -1428,6 +1429,7 @@ index 000000000000..f0a2b366a298
 +		//TODO: validate input
 +
 +		side = axis == xpad_axis_xy_right || axis == xpad_axis_z_right ? 1 : 0;
++		/* stored in reverse order for easy copy to packet */
 +		rog_ally->tr_calibrations[side][0] = x_stable;
 +		rog_ally->tr_calibrations[side][1] = x_max;
 +
@@ -1697,39 +1699,45 @@ index 000000000000..f0a2b366a298
 +				}
 +				// TODO: move these to functions
 +				drvdata->rog_ally_data->mode = xpad_mode_game;
-+				drvdata->rog_ally_data->deadzones[xpad_mode_game][0][1] = 64;
-+				drvdata->rog_ally_data->deadzones[xpad_mode_game][0][3] = 64;
-+				drvdata->rog_ally_data->deadzones[xpad_mode_game][1][1] = 64;
-+				drvdata->rog_ally_data->deadzones[xpad_mode_game][1][3] = 64;
++				for (int i = 0; i < xpad_mode_mouse; i++) {
++					drvdata->rog_ally_data->deadzones[i][0][1] = 64;
++					drvdata->rog_ally_data->deadzones[i][0][3] = 64;
++					drvdata->rog_ally_data->deadzones[i][1][1] = 64;
++					drvdata->rog_ally_data->deadzones[i][1][3] = 64;
 +
-+				drvdata->rog_ally_data->anti_deadzones[xpad_mode_game][0] = 64;
-+				drvdata->rog_ally_data->anti_deadzones[xpad_mode_game][1] = 64;
++					drvdata->rog_ally_data->response_curve[i][0][0] = 0x14;
++					drvdata->rog_ally_data->response_curve[i][0][1] = 0x14;
++					drvdata->rog_ally_data->response_curve[i][0][2] = 0x28;
++					drvdata->rog_ally_data->response_curve[i][0][3] = 0x28;
++					drvdata->rog_ally_data->response_curve[i][0][4] = 0x3c;
++					drvdata->rog_ally_data->response_curve[i][0][5] = 0x3c;
++					drvdata->rog_ally_data->response_curve[i][0][6] = 0x50;
++					drvdata->rog_ally_data->response_curve[i][0][7] = 0x50;
 +
-+				drvdata->rog_ally_data->response_curve[xpad_mode_game][0][0] = 0x14;
-+				drvdata->rog_ally_data->response_curve[xpad_mode_game][0][1] = 0x14;
-+				drvdata->rog_ally_data->response_curve[xpad_mode_game][0][2] = 0x28;
-+				drvdata->rog_ally_data->response_curve[xpad_mode_game][0][3] = 0x28;
-+				drvdata->rog_ally_data->response_curve[xpad_mode_game][0][4] = 0x3c;
-+				drvdata->rog_ally_data->response_curve[xpad_mode_game][0][5] = 0x3c;
-+				drvdata->rog_ally_data->response_curve[xpad_mode_game][0][6] = 0x50;
-+				drvdata->rog_ally_data->response_curve[xpad_mode_game][0][7] = 0x50;
++					drvdata->rog_ally_data->response_curve[i][1][0] = 0x14;
++					drvdata->rog_ally_data->response_curve[i][1][1] = 0x14;
++					drvdata->rog_ally_data->response_curve[i][1][2] = 0x28;
++					drvdata->rog_ally_data->response_curve[i][1][3] = 0x28;
++					drvdata->rog_ally_data->response_curve[i][1][4] = 0x3c;
++					drvdata->rog_ally_data->response_curve[i][1][5] = 0x3c;
++					drvdata->rog_ally_data->response_curve[i][1][6] = 0x50;
++					drvdata->rog_ally_data->response_curve[i][1][7] = 0x50;
 +
-+				drvdata->rog_ally_data->response_curve[xpad_mode_game][1][0] = 0x14;
-+				drvdata->rog_ally_data->response_curve[xpad_mode_game][1][1] = 0x14;
-+				drvdata->rog_ally_data->response_curve[xpad_mode_game][1][2] = 0x28;
-+				drvdata->rog_ally_data->response_curve[xpad_mode_game][1][3] = 0x28;
-+				drvdata->rog_ally_data->response_curve[xpad_mode_game][1][4] = 0x3c;
-+				drvdata->rog_ally_data->response_curve[xpad_mode_game][1][5] = 0x3c;
-+				drvdata->rog_ally_data->response_curve[xpad_mode_game][1][6] = 0x50;
-+				drvdata->rog_ally_data->response_curve[xpad_mode_game][1][7] = 0x50;
++					drvdata->rog_ally_data->vibration_intensity[i][0] = 64;
++					drvdata->rog_ally_data->vibration_intensity[i][1] = 64;
++				}
 +
++				ret = __gamepad_set_mode(&hdev->dev, xpad_mode_game);
++				if (ret < 0)
++					return ret;
 +				__gamepad_mapping_xpad_default(drvdata->rog_ally_data);
++				__gamepad_mapping_wasd_default(drvdata->rog_ally_data);
 +				// these calls will never error so ignore the return
 +				__gamepad_mapping_store(&hdev->dev, "kb_f14", btn_pair_m1_m2,
 +							btn_pair_side_left, false); // M2
 +				__gamepad_mapping_store(&hdev->dev, "kb_f15", btn_pair_m1_m2,
 +							btn_pair_side_right, false); // M1
-+				ret = __gamepad_set_mode(&hdev->dev, xpad_mode_game);
++				ret = __gamepad_set_mapping(&hdev->dev, btn_pair_m1_m2);
 +				if (ret < 0)
 +					return ret;
 +			}
@@ -1760,7 +1768,7 @@ index 000000000000..f0a2b366a298
 +};
 diff --git a/drivers/hid/hid-asus-rog.h b/drivers/hid/hid-asus-rog.h
 new file mode 100644
-index 000000000000..4d81f0ce8c59
+index 000000000000..3491242b6958
 --- /dev/null
 +++ b/drivers/hid/hid-asus-rog.h
 @@ -0,0 +1,482 @@
@@ -1816,7 +1824,7 @@ index 000000000000..4d81f0ce8c59
 +#define KB_F14 "kb_f14"
 +#define KB_F15 "kb_f15"
 +
-+#define KB_BACKTICK "kb_`"
++#define KB_BACKTICK "kb_backtick"
 +#define KB_1 "kb_1"
 +#define KB_2 "kb_2"
 +#define KB_3 "kb_3"
@@ -1827,8 +1835,8 @@ index 000000000000..4d81f0ce8c59
 +#define KB_8 "kb_8"
 +#define KB_9 "kb_9"
 +#define KB_0 "kb_0"
-+#define KB_HYPHEN "kb_-"
-+#define KB_EQUALS "kb_="
++#define KB_HYPHEN "kb_hyphen"
++#define KB_EQUALS "kb_equals"
 +#define KB_BACKSPACE "kb_backspace"
 +
 +#define KB_TAB "kb_tab"
@@ -1842,8 +1850,8 @@ index 000000000000..4d81f0ce8c59
 +#define KB_I "kb_i"
 +#define KB_O "kb_o"
 +#define KB_P "kb_p"
-+#define KB_LBRACKET "kb_["
-+#define KB_RBRACKET "kb_]"
++#define KB_LBRACKET "kb_lbracket"
++#define KB_RBRACKET "kb_rbracket"
 +#define KB_BACKSLASH "kb_bkslash"
 +
 +#define KB_CAPS "kb_caps"
@@ -1856,8 +1864,8 @@ index 000000000000..4d81f0ce8c59
 +#define KB_J "kb_j"
 +#define KB_K "kb_k"
 +#define KB_L "kb_l"
-+#define KB_SEMI "kb_;"
-+#define KB_QUOTE "kb_'"
++#define KB_SEMI "kb_semicolon"
++#define KB_QUOTE "kb_quote"
 +#define KB_RET "kb_enter"
 +
 +#define KB_LSHIFT "kb_lshift"
@@ -1868,9 +1876,9 @@ index 000000000000..4d81f0ce8c59
 +#define KB_B "kb_b"
 +#define KB_N "kb_n"
 +#define KB_M "kb_m"
-+#define KB_COMA "kb_,"
-+#define KB_PERIOD "kb_."
-+#define KB_FWDSLASH "kb_/"
++#define KB_COMMA "kb_comma"
++#define KB_PERIOD "kb_period"
++#define KB_FWDSLASH "kb_fwdslash"
 +#define KB_RSHIFT "kb_rshift"
 +
 +#define KB_LCTL "kb_lctl"
@@ -1896,10 +1904,10 @@ index 000000000000..4d81f0ce8c59
 +#define KB_LEFT_ARROW "kb_left_arrow"
 +#define KB_RIGHT_ARROW "kb_right_arrow"
 +
-+#define NUMPAD_LCK "numpad_lck"
-+#define NUMPAD_FWDSLASH "numpad_/"
-+#define NUMPAD_STAR "numpad_*"
-+#define NUMPAD_HYPHEN "numpad_-"
++#define NUMPAD_LOCK "numpad_lock"
++#define NUMPAD_FWDSLASH "numpad_fwdslash"
++#define NUMPAD_ASTERISK "numpad_asterisk"
++#define NUMPAD_HYPHEN "numpad_hyphen"
 +#define NUMPAD_0 "numpad_0"
 +#define NUMPAD_1 "numpad_1"
 +#define NUMPAD_2 "numpad_2"
@@ -1910,7 +1918,7 @@ index 000000000000..4d81f0ce8c59
 +#define NUMPAD_7 "numpad_7"
 +#define NUMPAD_8 "numpad_8"
 +#define NUMPAD_9 "numpad_9"
-+#define NUMPAD_PLUS "numpad_+"
++#define NUMPAD_PLUS "numpad_plus"
 +#define NUMPAD_ENTER "numpad_enter"
 +#define NUMPAD_PERIOD "numpad_."
 +
@@ -2313,5 +2321,5 @@ index 000000000000..18317cad7110
 +extern const struct rog_ops rog_ally;
 \ No newline at end of file
 -- 
-2.41.0
+2.43.0
 

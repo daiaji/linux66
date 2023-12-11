@@ -10,7 +10,7 @@ _kernelname=-MANJARO
 pkgbase=linux${_basever}
 pkgname=("$pkgbase" "$pkgbase-headers")
 pkgver=6.6.6
-pkgrel=1
+pkgrel=2
 arch=('x86_64')
 url="https://www.kernel.org/"
 license=('GPL2')
@@ -24,16 +24,17 @@ source=(https://git.kernel.org/torvalds/t/linux-${_basekernel}.tar.gz
         0101-ZEN_Add_sysctl_and_CONFIG_to_disallow_unprivileged_CLONE_NEWUSER.patch
         0102-drivers-firmware-skip-simpledrm-if-nvidia-drm.modese.patch
         # MANJARO Patches
+        wifi-cfg80211-fix-cqm-for-non-range-use.patch
+        wifi-nl80211-fix-deadlock-in-nl80211_set_cqm_rssi-6.6.x.patch
         # Realtek patch
         0999-patch_realtek.patch
         # ROG ALLY Patches
         0000-hid-asus-add-const-to-read-only-outgoing-usb-buffer.patch
         0001-hid-asus-reset-the-backlight-brightness-level-on-resume.patch
-        v14.1-0001-HID-asus-fix-more-n-key-report-descriptors-if-.patch
-        v14.1-0002-HID-asus-make-asus_kbd_init-generic-remove-rog.patch
-        v14.1-0003-HID-asus-add-ROG-Ally-N-Key-ID-and-keycodes.patch
-        v14.1-0004-HID-asus-add-ROG-Ally-xpad-settings.patch
-        v14.1-fix-defaults1.patch
+        v14.3-0001-HID-asus-fix-more-n-key-report-descriptors-if-.patch
+        v14.3-0002-HID-asus-make-asus_kbd_init-generic-remove-rog.patch
+        v14.3-0003-HID-asus-add-ROG-Ally-N-Key-ID-and-keycodes.patch
+        v14.3-0004-HID-asus-add-ROG-Ally-xpad-settings.patch
         0006-platform-x86-asus-wmi-disable-USB0-hub-on-ROG-Ally-b.patch
         0007-mt7921e_Perform_FLR_to_recovery_the_device.patch
         # AMD GPU reset patches
@@ -61,14 +62,15 @@ sha256sums=('9a72c005a62f109f96ee00552502d16c4f06c248e6baba1629506627396ac0a7'
             '35a2d72ae01a9c38037ca4617a89d5c846b9b82c2d3d6a17cef0506b3814b2c0'
             '05f04019d4a2ee072238c32860fa80d673687d84d78ef436ae9332b6fb788467'
             'e1d17690dd21e8d5482b63ca66bfe6b478d39e8e8b59eedd53adb0a55ebc308d'
+            'da395b30e32d2f09e144e2b441dc5da6a483b9ce75d660f936a12a1a93646207'
+            '4e4477ca4d7a434a48ed84bb4f223e2ad5ea739ba929804f0e502c948c9ef343'
             '3aa9f1ca47bb078f3c9a52fe61897cf4fe989068cd7e66bfa6644fd605fa40d2'
             'fb2cd8a3ea9d47bd78c99b8ece1f3959c20b4de97a7959a12650f989f5c724da'
             '7f3194f1a7c5ebc27bbfa4559cfd9a2ccffddbbd2d259c0d9c68631cb66c5855'
-            '176adde8fc3069bd28393bf0c9d788f1b0f9a186678aec4dc17b0b081c57f97b'
-            '493fa177cf602f087e981e95fad3764e305f4c486d4c2ef78255388b913be9cf'
-            '50ea381758fb8a8566f38a509fe7cf0448c77eaec5103066cafc2ecf02db1e9f'
-            '970687b811034e722befde62bcf6d51c7442a217074ed0fb71460bb1803f4c64'
-            'c00b23162fdbf50de375d8e444b6d59e2e3630cfac55ec1d06114b9dad00e542'
+            'c12c23a6466953adbd1b614003bc61bdf04a078ecb432555b438ad1e7eb39a1c'
+            '15fc24048fc162d7209397929fc2df6663c223ee555538c5f5b8bc06aa007b85'
+            '07080acb53ed49c797d9642192ebe87c7bfe048644cd02c8d44b73592fc1f499'
+            '4824c5fd1331dfa53229e2f89c09966329d00257a314ef864ad2f94ddf8fafdf'
             '836e88044263f7bc474ca466b3d0d98c39e265db94925c300d0b138492946a13'
             'd673d034fbcd80426fd8d9c6af56537c5fe5b55fe49d74e313474d7fc285ecc1'
             '1f62542a889a6c2eafd43acd0699f54720ed891eeda66a4a9261d75b92f28b7f'
