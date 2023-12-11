@@ -10,7 +10,7 @@ _kernelname=-MANJARO
 pkgbase=linux${_basever}
 pkgname=("$pkgbase" "$pkgbase-headers")
 pkgver=6.6.6
-pkgrel=1
+pkgrel=2
 arch=('x86_64')
 url="https://www.kernel.org/"
 license=('GPL2')
@@ -33,6 +33,7 @@ source=(https://git.kernel.org/torvalds/t/linux-${_basekernel}.tar.gz
         v14.1-0002-HID-asus-make-asus_kbd_init-generic-remove-rog.patch
         v14.1-0003-HID-asus-add-ROG-Ally-N-Key-ID-and-keycodes.patch
         v14.1-0004-HID-asus-add-ROG-Ally-xpad-settings.patch
+        v14.1-fix-defaults1.patch
         0006-platform-x86-asus-wmi-disable-USB0-hub-on-ROG-Ally-b.patch
         0007-mt7921e_Perform_FLR_to_recovery_the_device.patch
         # AMD GPU reset patches
@@ -67,6 +68,7 @@ sha256sums=('9a72c005a62f109f96ee00552502d16c4f06c248e6baba1629506627396ac0a7'
             '493fa177cf602f087e981e95fad3764e305f4c486d4c2ef78255388b913be9cf'
             '50ea381758fb8a8566f38a509fe7cf0448c77eaec5103066cafc2ecf02db1e9f'
             '970687b811034e722befde62bcf6d51c7442a217074ed0fb71460bb1803f4c64'
+            'c00b23162fdbf50de375d8e444b6d59e2e3630cfac55ec1d06114b9dad00e542'
             '836e88044263f7bc474ca466b3d0d98c39e265db94925c300d0b138492946a13'
             'd673d034fbcd80426fd8d9c6af56537c5fe5b55fe49d74e313474d7fc285ecc1'
             '1f62542a889a6c2eafd43acd0699f54720ed891eeda66a4a9261d75b92f28b7f'
