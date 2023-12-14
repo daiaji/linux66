@@ -10,7 +10,7 @@ _kernelname=-MANJARO
 pkgbase=linux${_basever}
 pkgname=("$pkgbase" "$pkgbase-headers")
 pkgver=6.6.7
-pkgrel=1
+pkgrel=2
 arch=('x86_64')
 url="https://www.kernel.org/"
 license=('GPL2')
@@ -46,7 +46,9 @@ source=(https://git.kernel.org/torvalds/t/linux-${_basekernel}.tar.gz
         0001-ALSA-hda-cs35l41-Improve-support-for-ASUS-ROG-Ally.patch
         # Additional ALLY patches
         ROG-ALLY-NCT6775-PLATFORM.patch
-        0001-ROG-ALLY-bmi323-device.patch
+        0001-iio-imu_Add_driver_for_BMI323_IMU.patch
+        0002-iio-imu-bmi323-Make-the-local-structures-static.patch
+        0003-iio-imu_Add_ROG_ALLY_bmi323-support.patch
         # Steamdeck HID patches
         0001-HID.patch
 )
@@ -59,7 +61,7 @@ fi
 
 sha256sums=('9a72c005a62f109f96ee00552502d16c4f06c248e6baba1629506627396ac0a7'
             'b227017c1aba9089054a2ca8b6671225de948a6643d7a759558386540f55d1e2'
-            '3ceed34e90513470357a4c595d7dddb65767a22f5421d7e82c598914ecf07c58'
+            '3e0f088ee6c766e5664b89570d210b329e3305ba12e4097ae0de866a3145e22d'
             '05f04019d4a2ee072238c32860fa80d673687d84d78ef436ae9332b6fb788467'
             'e1d17690dd21e8d5482b63ca66bfe6b478d39e8e8b59eedd53adb0a55ebc308d'
             'da395b30e32d2f09e144e2b441dc5da6a483b9ce75d660f936a12a1a93646207'
@@ -79,7 +81,9 @@ sha256sums=('9a72c005a62f109f96ee00552502d16c4f06c248e6baba1629506627396ac0a7'
             '79970a4729572cb25fd4644d66f38ecd5b3e1610a42ea4bbe436b501f3469fa2'
             '430a7f971d78d0873708e0ad38fba602ceafefd4da8ebbf9d9c591bc4799acb5'
             'cfcd5c177423df8b7b98b0500fe7ab0757f895ed945c33e205963f0069c7a3be'
-            '5574a68b1c7733769835bb856a8c32e54398dfde59f264708672b87b73b3c6ea'
+            '708a9899f80db35fb0f06e0144c361eac9a9b2d154cf2fa388a0b4810847e24c'
+            '514fd03c17245ed0aaee63e8830c9b02b00efa0307f7e0989065edec6ae185f0'
+            'c8de7674a4c3d0d48a753bb52a5e6745dc5af68a71dc678c838386b5157f3230'
             '7c948773d758418d8a436067265d678c444827562c46b9fced2ff31ced108481')
 
 prepare() {
