@@ -10,7 +10,7 @@ _kernelname=-MANJARO
 pkgbase=linux${_basever}
 pkgname=("$pkgbase" "$pkgbase-headers")
 pkgver=6.6.7
-pkgrel=2
+pkgrel=3
 arch=('x86_64')
 url="https://www.kernel.org/"
 license=('GPL2')
@@ -31,10 +31,10 @@ source=(https://git.kernel.org/torvalds/t/linux-${_basekernel}.tar.gz
         # ROG ALLY Patches
         0000-hid-asus-add-const-to-read-only-outgoing-usb-buffer.patch
         0001-hid-asus-reset-the-backlight-brightness-level-on-resume.patch
-        v14.3-0001-HID-asus-fix-more-n-key-report-descriptors-if-.patch
-        v14.3-0002-HID-asus-make-asus_kbd_init-generic-remove-rog.patch
-        v14.3-0003-HID-asus-add-ROG-Ally-N-Key-ID-and-keycodes.patch
-        v14.3-0004-HID-asus-add-ROG-Ally-xpad-settings.patch
+        v14.4-0001-HID-asus-fix-more-n-key-report-descriptors-if-.patch
+        v14.4-0002-HID-asus-make-asus_kbd_init-generic-remove-rog.patch
+        v14.4-0003-HID-asus-add-ROG-Ally-N-Key-ID-and-keycodes.patch
+        v14.4-0004-HID-asus-add-ROG-Ally-xpad-settings.patch
         0006-platform-x86-asus-wmi-disable-USB0-hub-on-ROG-Ally-b.patch
         0007-mt7921e_Perform_FLR_to_recovery_the_device.patch
         # AMD GPU reset patches
@@ -69,10 +69,10 @@ sha256sums=('9a72c005a62f109f96ee00552502d16c4f06c248e6baba1629506627396ac0a7'
             '3aa9f1ca47bb078f3c9a52fe61897cf4fe989068cd7e66bfa6644fd605fa40d2'
             'fb2cd8a3ea9d47bd78c99b8ece1f3959c20b4de97a7959a12650f989f5c724da'
             '7f3194f1a7c5ebc27bbfa4559cfd9a2ccffddbbd2d259c0d9c68631cb66c5855'
-            'c12c23a6466953adbd1b614003bc61bdf04a078ecb432555b438ad1e7eb39a1c'
-            '15fc24048fc162d7209397929fc2df6663c223ee555538c5f5b8bc06aa007b85'
-            '07080acb53ed49c797d9642192ebe87c7bfe048644cd02c8d44b73592fc1f499'
-            '4824c5fd1331dfa53229e2f89c09966329d00257a314ef864ad2f94ddf8fafdf'
+            'd6f7110fa90507fb9cdcd5716bcbbb7b91cf242340cee7b7c710bb263529558f'
+            'ff399ebbe5b7ea6c4eb8dc265cde68f35f8f6cf16b945a67793200e434908dcc'
+            '65494a6620a7997388d9751c3b0b4a46b4530edfb75f633464f3aee839b33239'
+            'd4efb9673784ea940a8499d9a86b012c7a452acc440d55a7027af525a328a4e1'
             '836e88044263f7bc474ca466b3d0d98c39e265db94925c300d0b138492946a13'
             'd673d034fbcd80426fd8d9c6af56537c5fe5b55fe49d74e313474d7fc285ecc1'
             '1f62542a889a6c2eafd43acd0699f54720ed891eeda66a4a9261d75b92f28b7f'

@@ -1,7 +1,7 @@
-From d42bd0d81d2b4a1db4c82e19f33c90ac9138bb8b Mon Sep 17 00:00:00 2001
+From cea7e244e6fdfe3910aa518b35f5bb121b068ff2 Mon Sep 17 00:00:00 2001
 From: "Luke D. Jones" <luke@ljones.dev>
 Date: Fri, 1 Dec 2023 16:57:19 +1300
-Subject: [PATCH v14.3 4/4] HID: asus: add ROG Ally xpad settings
+Subject: [PATCH v14.4 4/4] HID: asus: add ROG Ally xpad settings
 
 - move ROG specific stuff to new .c
 - add a header for common parts
@@ -297,7 +297,7 @@ index 3a1a6024d299..026705c43ee1 100644
  	  QUIRK_ROG_CLAYMORE_II_KEYBOARD },
 diff --git a/drivers/hid/hid-asus-rog.c b/drivers/hid/hid-asus-rog.c
 new file mode 100644
-index 000000000000..5c977bdb2c32
+index 000000000000..e42650af8b8e
 --- /dev/null
 +++ b/drivers/hid/hid-asus-rog.c
 @@ -0,0 +1,1465 @@
@@ -1727,9 +1727,6 @@ index 000000000000..5c977bdb2c32
 +					drvdata->rog_ally_data->vibration_intensity[i][1] = 64;
 +				}
 +
-+				ret = __gamepad_set_mode(&hdev->dev, xpad_mode_game);
-+				if (ret < 0)
-+					return ret;
 +				__gamepad_mapping_xpad_default(drvdata->rog_ally_data);
 +				__gamepad_mapping_wasd_default(drvdata->rog_ally_data);
 +				// these calls will never error so ignore the return
@@ -1738,6 +1735,9 @@ index 000000000000..5c977bdb2c32
 +				__gamepad_mapping_store(&hdev->dev, "kb_f15", btn_pair_m1_m2,
 +							btn_pair_side_right, false); // M1
 +				ret = __gamepad_set_mapping(&hdev->dev, btn_pair_m1_m2);
++				if (ret < 0)
++					return ret;
++				ret = __gamepad_set_mode(&hdev->dev, xpad_mode_game);
 +				if (ret < 0)
 +					return ret;
 +			}
@@ -1768,7 +1768,7 @@ index 000000000000..5c977bdb2c32
 +};
 diff --git a/drivers/hid/hid-asus-rog.h b/drivers/hid/hid-asus-rog.h
 new file mode 100644
-index 000000000000..3491242b6958
+index 000000000000..efad0b041d5d
 --- /dev/null
 +++ b/drivers/hid/hid-asus-rog.h
 @@ -0,0 +1,482 @@
@@ -2201,12 +2201,17 @@ index 000000000000..3491242b6958
 +	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 +};
 +
++/*
++ * the xpad_mode is used inside the mode setting packet and is used
++ * for indexing (xpad_mode - 1)
++ */
 +enum xpad_mode {
 +	xpad_mode_game = 0x01,
 +	xpad_mode_wasd = 0x02,
 +	xpad_mode_mouse = 0x03,
 +};
 +
++/* the xpad_cmd determines which feature is set or queried */
 +enum xpad_cmd {
 +	xpad_cmd_set_mode = 0x01,
 +	xpad_cmd_set_mapping = 0x02,
@@ -2220,20 +2225,15 @@ index 000000000000..3491242b6958
 +	xpad_cmd_set_adz = 0x18,
 +};
 +
++/*
++ * the xpad_mode is used in various set and query HID packets and is
++ * used for indexing (xpad_axis - 1)
++ */
 +enum xpad_axis {
 +	xpad_axis_xy_left = 0x01,
 +	xpad_axis_xy_right = 0x02,
 +	xpad_axis_z_left = 0x03,
 +	xpad_axis_z_right = 0x04,
-+};
-+
-+enum mcu_output_dev {
-+	mcu_output_dev_blank = 0x00,
-+	mcu_output_dev_xpad = 0x01,
-+	mcu_output_dev_keyboard = 0x02,
-+	mcu_output_dev_mouse = 0x03,
-+	mcu_output_dev_macro = 0x04,
-+	mcu_output_dev_media = 0x05,
 +};
 +
 +enum btn_pair {
