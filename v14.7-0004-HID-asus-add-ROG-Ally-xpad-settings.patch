@@ -1,7 +1,7 @@
-From 86f431b93579ff4b37d767f5ad1f8d7b089b52e5 Mon Sep 17 00:00:00 2001
+From 63efa3ea0404266779a75af0f7ea39921285f75c Mon Sep 17 00:00:00 2001
 From: "Luke D. Jones" <luke@ljones.dev>
 Date: Fri, 1 Dec 2023 16:57:19 +1300
-Subject: [PATCH v14.6 4/4] HID: asus: add ROG Ally xpad settings
+Subject: [PATCH v14.7 4/4] HID: asus: add ROG Ally xpad settings
 
 - move ROG specific stuff to new .c
 - add a header for common parts
@@ -18,10 +18,10 @@ Subject: [PATCH v14.6 4/4] HID: asus: add ROG Ally xpad settings
  .../ABI/testing/sysfs-driver-hid-asus         |   85 +
  drivers/hid/Makefile                          |    2 +
  drivers/hid/{hid-asus.c => hid-asus-core.c}   |   71 +-
- drivers/hid/hid-asus-rog.c                    | 1470 +++++++++++++++++
+ drivers/hid/hid-asus-rog.c                    | 1468 +++++++++++++++++
  drivers/hid/hid-asus-rog.h                    |  482 ++++++
  drivers/hid/hid-asus.h                        |   58 +
- 6 files changed, 2127 insertions(+), 41 deletions(-)
+ 6 files changed, 2125 insertions(+), 41 deletions(-)
  create mode 100644 Documentation/ABI/testing/sysfs-driver-hid-asus
  rename drivers/hid/{hid-asus.c => hid-asus-core.c} (96%)
  create mode 100644 drivers/hid/hid-asus-rog.c
@@ -297,10 +297,10 @@ index 3a1a6024d299..026705c43ee1 100644
  	  QUIRK_ROG_CLAYMORE_II_KEYBOARD },
 diff --git a/drivers/hid/hid-asus-rog.c b/drivers/hid/hid-asus-rog.c
 new file mode 100644
-index 000000000000..39fffc8a61cb
+index 000000000000..584aefd0915a
 --- /dev/null
 +++ b/drivers/hid/hid-asus-rog.c
-@@ -0,0 +1,1470 @@
+@@ -0,0 +1,1468 @@
 +// SPDX-License-Identifier: GPL-2.0-or-later
 +/*
 + *  HID driver for Asus ROG laptops and Ally
@@ -738,36 +738,37 @@ index 000000000000..39fffc8a61cb
 +static int __gamepad_check_ready(struct hid_device *hdev)
 +{
 +	u8 *hidbuf;
-+	int ret;
++	int ret, count;
 +
 +	hidbuf = kzalloc(FEATURE_ROG_ALLY_REPORT_SIZE, GFP_KERNEL);
 +	if (!hidbuf)
 +		return -ENOMEM;
 +
-+	hidbuf[0] = FEATURE_KBD_REPORT_ID;
-+	hidbuf[1] = 0xD1;
-+	hidbuf[2] = xpad_cmd_check_ready;
-+	hidbuf[3] = 01;
-+	ret = asus_kbd_set_report(hdev, hidbuf, FEATURE_ROG_ALLY_REPORT_SIZE);
-+	if (ret < 0)
-+		goto report_fail;
++	for (count = 0; count < 3; count++) {
++		hidbuf[0] = FEATURE_KBD_REPORT_ID;
++		hidbuf[1] = 0xD1;
++		hidbuf[2] = xpad_cmd_check_ready;
++		hidbuf[3] = 01;
++		ret = asus_kbd_set_report(hdev, hidbuf,
++					  FEATURE_ROG_ALLY_REPORT_SIZE);
++		if (ret < 0)
++			hid_warn(hdev, "ROG Ally check failed set report: %d\n", ret);
 +
-+	hidbuf[0] = hidbuf[1] = hidbuf[2] = hidbuf[3] = 0;
-+	ret = asus_kbd_get_report(hdev, hidbuf, FEATURE_ROG_ALLY_REPORT_SIZE);
-+	if (ret < 0)
-+		goto report_fail;
++		hidbuf[0] = hidbuf[1] = hidbuf[2] = hidbuf[3] = 0;
++		ret = asus_kbd_get_report(hdev, hidbuf, FEATURE_ROG_ALLY_REPORT_SIZE);
++		if (ret < 0)
++			hid_warn(hdev, "ROG Ally check failed get report: %d\n", ret);
 +
-+	ret = hidbuf[2] == xpad_cmd_check_ready;
-+	if (!ret) {
-+		hid_warn(hdev, "ROG Ally not ready\n");
-+		ret = -ENOMSG;
++		ret = hidbuf[2] == xpad_cmd_check_ready;
++		if (!ret)
++			hid_warn(hdev, "ROG Ally not ready, retry %d\n", count);
++		else
++			break;
 +	}
 +
-+	kfree(hidbuf);
-+	return ret;
++	if (count == 3)
++		hid_err(hdev, "ROG Ally never responded with a ready\n");
 +
-+report_fail:
-+	hid_dbg(hdev, "ROG Ally check failed get report: %d\n", ret);
 +	kfree(hidbuf);
 +	return ret;
 +}
@@ -1680,7 +1681,7 @@ index 000000000000..39fffc8a61cb
 +static int asus_rog_ally_probe(struct hid_device *hdev, const struct rog_ops *ops)
 +{
 +	struct asus_drvdata *drvdata = hid_get_drvdata(hdev);
-+	int ret;
++	int ret = 0;
 +
 +	/* all ROG devices have this HID interface but we will focus on Ally for now */
 +	if (drvdata->quirks & QUIRK_ROG_NKEY_KEYBOARD && hid_is_usb(hdev)) {
@@ -1732,6 +1733,7 @@ index 000000000000..39fffc8a61cb
 +					drvdata->rog_ally_data->vibration_intensity[i][1] = 64;
 +				}
 +
++				/* ignore all errors for this as they are related to USB HID I/O */
 +				__gamepad_mapping_xpad_default(drvdata->rog_ally_data);
 +				__gamepad_mapping_wasd_default(drvdata->rog_ally_data);
 +				// these calls will never error so ignore the return
@@ -1739,12 +1741,8 @@ index 000000000000..39fffc8a61cb
 +							btn_pair_side_left, false); // M2
 +				__gamepad_mapping_store(&hdev->dev, "kb_f15", btn_pair_m1_m2,
 +							btn_pair_side_right, false); // M1
-+				ret = __gamepad_set_mapping(&hdev->dev, btn_pair_m1_m2);
-+				if (ret < 0)
-+					return ret;
-+				ret = __gamepad_set_mode(&hdev->dev, xpad_mode_game);
-+				if (ret < 0)
-+					return ret;
++				__gamepad_set_mapping(&hdev->dev, btn_pair_m1_m2);
++				__gamepad_set_mode(&hdev->dev, xpad_mode_game);
 +			}
 +
 +			if (sysfs_create_groups(&hdev->dev.kobj, gamepad_device_attr_groups))
@@ -2326,5 +2324,5 @@ index 000000000000..18317cad7110
 +extern const struct rog_ops rog_ally;
 \ No newline at end of file
 -- 
-2.43.0
+2.41.0
 

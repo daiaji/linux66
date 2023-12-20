@@ -1,7 +1,7 @@
 From 646c1ffacd59555825734bbcd2fa6e38100570c5 Mon Sep 17 00:00:00 2001
 From: "Luke D. Jones" <luke@ljones.dev>
 Date: Wed, 29 Nov 2023 22:18:11 +1300
-Subject: [PATCH v14.6 3/4] HID: asus: add ROG Ally N-Key ID and keycodes
+Subject: [PATCH v14.7 3/4] HID: asus: add ROG Ally N-Key ID and keycodes
 
 ---
  drivers/hid/hid-asus.c | 7 +++++++
@@ -46,5 +46,5 @@ index 72046039d1be..ec9a41050446 100644
  #define USB_DEVICE_ID_ASUSTEK_FX503VD_KEYBOARD	0x1869
  
 -- 
-2.43.0
+2.41.0
 

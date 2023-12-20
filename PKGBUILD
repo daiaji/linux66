@@ -31,10 +31,10 @@ source=(https://git.kernel.org/torvalds/t/linux-${_basekernel}.tar.gz
         # ROG ALLY Patches
         0000-hid-asus-add-const-to-read-only-outgoing-usb-buffer.patch
         0001-hid-asus-reset-the-backlight-brightness-level-on-resume.patch
-        v14.6-0001-HID-asus-fix-more-n-key-report-descriptors-if-.patch
-        v14.6-0002-HID-asus-make-asus_kbd_init-generic-remove-rog.patch
-        v14.6-0003-HID-asus-add-ROG-Ally-N-Key-ID-and-keycodes.patch
-        v14.6-0004-HID-asus-add-ROG-Ally-xpad-settings.patch
+        v14.7-0001-HID-asus-fix-more-n-key-report-descriptors-if-.patch
+        v14.7-0002-HID-asus-make-asus_kbd_init-generic-remove-rog.patch
+        v14.7-0003-HID-asus-add-ROG-Ally-N-Key-ID-and-keycodes.patch
+        v14.7-0004-HID-asus-add-ROG-Ally-xpad-settings.patch
         0006-platform-x86-asus-wmi-disable-USB0-hub-on-ROG-Ally-b.patch
         0007-mt7921e_Perform_FLR_to_recovery_the_device.patch
         # AMD GPU reset patches
@@ -70,10 +70,10 @@ sha256sums=('9a72c005a62f109f96ee00552502d16c4f06c248e6baba1629506627396ac0a7'
             '3aa9f1ca47bb078f3c9a52fe61897cf4fe989068cd7e66bfa6644fd605fa40d2'
             'fb2cd8a3ea9d47bd78c99b8ece1f3959c20b4de97a7959a12650f989f5c724da'
             '7f3194f1a7c5ebc27bbfa4559cfd9a2ccffddbbd2d259c0d9c68631cb66c5855'
-            'e7c14393ba5416e4417586a4b0d75b6f86f8ec5e81f419833775b9012f69c574'
-            'c43d58fd56643fcfa3b613f6746ad6fdd375a5d2eb7bd4d9fcb625547f4cf0d1'
-            '177e0bb6c0ca89c857f906cb84a98cab02ca504d571c57d934f2eb0b125ff03b'
-            '05a68378736e24eb5794cbd4c53ff18d0472df3eaa92a87f83e899b6d17e168e'
+            '8c55bb3cea9d833ce5545b65f0c74c8c5f98359ab69b5c83cb8000c409bf911f'
+            '83ea013b3b823aef7ae6f890760ba534b8eba2851fd85ddd9ef23ebce2d41fec'
+            '44071403fe29edc6cbf327883fcb3e3b8e826bcbb668c28b1dffe15013d55ad2'
+            '9f195002f0286a8d0581abd62c2ed16714892fd44fc251aa2adc5652a67fea59'
             '836e88044263f7bc474ca466b3d0d98c39e265db94925c300d0b138492946a13'
             'd673d034fbcd80426fd8d9c6af56537c5fe5b55fe49d74e313474d7fc285ecc1'
             '1f62542a889a6c2eafd43acd0699f54720ed891eeda66a4a9261d75b92f28b7f'
