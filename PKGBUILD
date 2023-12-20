@@ -10,7 +10,7 @@ _kernelname=-MANJARO
 pkgbase=linux${_basever}
 pkgname=("$pkgbase" "$pkgbase-headers")
 pkgver=6.6.7
-pkgrel=5
+pkgrel=6
 arch=('x86_64')
 url="https://www.kernel.org/"
 license=('GPL2')
@@ -50,6 +50,7 @@ source=(https://git.kernel.org/torvalds/t/linux-${_basekernel}.tar.gz
         0002-iio-imu-bmi323-Make-the-local-structures-static.patch
         0003-iio-imu_Add_ROG_ALLY_bmi323-support.patch
         0004-iio-imu-Load_ROG_ALLY_mount_matrix.patch
+        0005-iio-imu-ASUS-ROG-ALLY-force-INT1-IRQ.patch
         # Steamdeck HID patches
         0001-HID.patch
 )
@@ -86,6 +87,7 @@ sha256sums=('9a72c005a62f109f96ee00552502d16c4f06c248e6baba1629506627396ac0a7'
             '514fd03c17245ed0aaee63e8830c9b02b00efa0307f7e0989065edec6ae185f0'
             'fccdf24b25620dd8271bb3b52ddc53f8882dec26518258dc47e1469fed33e516'
             'fa21503611da0e8260498ad905f9dd3faaf921bfb4ce178f9493d1e4f9d5e08f'
+            '5792a59a0c726a205ae1c1728700ea3e6385231cadc2cfdd2db08295b100638c'
             '7c948773d758418d8a436067265d678c444827562c46b9fced2ff31ced108481')
 
 prepare() {
