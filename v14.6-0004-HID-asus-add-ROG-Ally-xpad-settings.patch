@@ -1,7 +1,7 @@
-From fcdaad3f66b6c46ec45830775153b3f22f08b2d0 Mon Sep 17 00:00:00 2001
+From 86f431b93579ff4b37d767f5ad1f8d7b089b52e5 Mon Sep 17 00:00:00 2001
 From: "Luke D. Jones" <luke@ljones.dev>
 Date: Fri, 1 Dec 2023 16:57:19 +1300
-Subject: [PATCH v14.5 4/4] HID: asus: add ROG Ally xpad settings
+Subject: [PATCH v14.6 4/4] HID: asus: add ROG Ally xpad settings
 
 - move ROG specific stuff to new .c
 - add a header for common parts
@@ -2326,5 +2326,5 @@ index 000000000000..18317cad7110
 +extern const struct rog_ops rog_ally;
 \ No newline at end of file
 -- 
-2.41.0
+2.43.0
 
