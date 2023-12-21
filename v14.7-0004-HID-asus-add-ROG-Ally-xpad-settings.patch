@@ -1,4 +1,4 @@
-From 63efa3ea0404266779a75af0f7ea39921285f75c Mon Sep 17 00:00:00 2001
+From 9fd3de7abd22d7e67a8757e3f67410302359fec7 Mon Sep 17 00:00:00 2001
 From: "Luke D. Jones" <luke@ljones.dev>
 Date: Fri, 1 Dec 2023 16:57:19 +1300
 Subject: [PATCH v14.7 4/4] HID: asus: add ROG Ally xpad settings
@@ -18,10 +18,10 @@ Subject: [PATCH v14.7 4/4] HID: asus: add ROG Ally xpad settings
  .../ABI/testing/sysfs-driver-hid-asus         |   85 +
  drivers/hid/Makefile                          |    2 +
  drivers/hid/{hid-asus.c => hid-asus-core.c}   |   71 +-
- drivers/hid/hid-asus-rog.c                    | 1468 +++++++++++++++++
+ drivers/hid/hid-asus-rog.c                    | 1469 +++++++++++++++++
  drivers/hid/hid-asus-rog.h                    |  482 ++++++
  drivers/hid/hid-asus.h                        |   58 +
- 6 files changed, 2125 insertions(+), 41 deletions(-)
+ 6 files changed, 2126 insertions(+), 41 deletions(-)
  create mode 100644 Documentation/ABI/testing/sysfs-driver-hid-asus
  rename drivers/hid/{hid-asus.c => hid-asus-core.c} (96%)
  create mode 100644 drivers/hid/hid-asus-rog.c
@@ -297,10 +297,10 @@ index 3a1a6024d299..026705c43ee1 100644
  	  QUIRK_ROG_CLAYMORE_II_KEYBOARD },
 diff --git a/drivers/hid/hid-asus-rog.c b/drivers/hid/hid-asus-rog.c
 new file mode 100644
-index 000000000000..584aefd0915a
+index 000000000000..94b7c986576c
 --- /dev/null
 +++ b/drivers/hid/hid-asus-rog.c
-@@ -0,0 +1,1468 @@
+@@ -0,0 +1,1469 @@
 +// SPDX-License-Identifier: GPL-2.0-or-later
 +/*
 + *  HID driver for Asus ROG laptops and Ally
@@ -764,6 +764,7 @@ index 000000000000..584aefd0915a
 +			hid_warn(hdev, "ROG Ally not ready, retry %d\n", count);
 +		else
 +			break;
++		msleep(2); // don't spam the entire loop in less than USB response time
 +	}
 +
 +	if (count == 3)
@@ -2324,5 +2325,5 @@ index 000000000000..18317cad7110
 +extern const struct rog_ops rog_ally;
 \ No newline at end of file
 -- 
-2.41.0
+2.43.0
 
