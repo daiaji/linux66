@@ -9,8 +9,8 @@ _basever=${_basekernel//.}
 _kernelname=-MANJARO
 pkgbase=linux${_basever}
 pkgname=("$pkgbase" "$pkgbase-headers")
-pkgver=6.6.8
-pkgrel=2
+pkgver=6.6.9
+pkgrel=1
 arch=('x86_64')
 url="https://www.kernel.org/"
 license=('GPL2')
@@ -60,7 +60,7 @@ else
 fi
 
 sha256sums=('9a72c005a62f109f96ee00552502d16c4f06c248e6baba1629506627396ac0a7'
-            '583dcf8a18344cf9eb68916b3082274a0a0531d59d732f9f4df7f870af33d72a'
+            'aa6206e7eae6eb942419a26ad3769e1c710ff55509762d257331542654561f07'
             'e31b61a0425a6fc3a45cd67f8c2606bc6ca2ac578dd710b890ebd030e53eeffa'
             '05f04019d4a2ee072238c32860fa80d673687d84d78ef436ae9332b6fb788467'
             'e1d17690dd21e8d5482b63ca66bfe6b478d39e8e8b59eedd53adb0a55ebc308d'
