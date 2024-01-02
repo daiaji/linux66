@@ -51,6 +51,8 @@ source=(https://git.kernel.org/torvalds/t/linux-${_basekernel}.tar.gz
         0005-iio-imu-ASUS-ROG-ALLY-force-INT1-IRQ.patch
         # Steamdeck HID patches
         0001-HID.patch
+        # ACS override patch
+        0999-acs.gitpatch
 )
 
 if [[ -z "$_rc" ]]; then
@@ -84,7 +86,8 @@ sha256sums=('9a72c005a62f109f96ee00552502d16c4f06c248e6baba1629506627396ac0a7'
             'fccdf24b25620dd8271bb3b52ddc53f8882dec26518258dc47e1469fed33e516'
             'c3b901db58288b5cc5d8a947ac8ffec339870b00aba493d68a39f65c4ff3d869'
             '5792a59a0c726a205ae1c1728700ea3e6385231cadc2cfdd2db08295b100638c'
-            '7c948773d758418d8a436067265d678c444827562c46b9fced2ff31ced108481')
+            '7c948773d758418d8a436067265d678c444827562c46b9fced2ff31ced108481'
+            '458d7e024d33d4965b14b9b987f01a2884ff28761cff5da7c6a54132a95e9f36')
 
 prepare() {
   cd "$_srcdir"
@@ -102,6 +105,9 @@ prepare() {
       patch -Np1 < "../$src"
   done
 
+  msg2 "apply 0999 acs override patch"
+  patch --ignore-whitespace --fuzz 3 -p1 < "../0999-acs.gitpatch"
+  
   msg2 "add config"
   cat "../config" > ./.config
 
